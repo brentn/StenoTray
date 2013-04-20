@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.Reader;
 import java.io.FileReader;
 import java.io.BufferedReader;
+import java.io.IOException;
 
 public class StenoTray extends JFrame {
     
@@ -221,6 +222,8 @@ public class StenoTray extends JFrame {
                         simplify = (fields[1].trim().equals("true"));
                     else if (fields[0].trim().equals("FONT_SIZE"))
                         fontSize = Integer.parseInt(fields[1].trim());
+                    else if (fields[0].trim().equals("DEBUG"))
+                        DEBUG = (fields[1].trim().equals("true"));
                 }
                 line = in.readLine();
             }
@@ -261,10 +264,11 @@ public class StenoTray extends JFrame {
         }
         public String phrase() { return phrase; }
         public void add(String stroke) {
-            if (DEBUG) System.out.println("->"+stroke+" ("+prevPhrase+")");
             prevPhrase = phrase;
             if (stroke == null || stroke.equals("None")) {
                 phrase = null;
+                glue = false;
+                joinEnd = false;
             } else {
                 if ((joinStart(stroke)) || (glue && hasGlue(stroke))) {
                     phrase += processAttributes(stroke);
@@ -272,6 +276,7 @@ public class StenoTray extends JFrame {
                     phrase = processAttributes(stroke);
                 }
             }
+            if (DEBUG) System.out.println("->"+stroke+" ("+prevPhrase+")");
         }
         public void add(String undo, String stroke, String prev) {
             prevPhrase = phrase;
