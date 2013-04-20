@@ -299,7 +299,7 @@ public class StenoTray extends JFrame {
         }
         private String processAttributes(String s) {
             if (s == null || s.length() == 0) return null;
-            if (s.charAt(0) != '{') return s;
+            if ((s.charAt(0) != '{') || (s.charAt(s.length()-1) != '}')) return s;
             int trimStart = 1;
             int trimEnd = 1;
             if (hasGlue(s)) {
