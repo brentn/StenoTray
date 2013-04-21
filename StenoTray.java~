@@ -204,47 +204,50 @@ public class StenoTray extends JFrame {
     private void readConfig() throws java.io.FileNotFoundException {
         String ploverConfig = System.getProperty("user.home")+"/.config/plover/plover.cfg";
         int fontSize = 12;
-        In in;
         String line = "";
         String[] fields;
         if (new File(CONFIG).isFile()) {
             if (DEBUG) System.out.println("Loading config file ("+CONFIG+")...");
-            in = new In(CONFIG);
-            line = in.readLine();
-            while (line != null) {
-                if (line.contains("=")) {
-                    fields = line.split("=");
-                    if (fields[0].trim().equals("PLOVER_CONFIG"))
-                        ploverConfig = fields[1].trim();
-                    else if (fields[0].trim().equals("LIMIT_RESULTS"))
-                        limit = Integer.parseInt(fields[1].trim());
-                    else if (fields[0].trim().equals("SIMPLIFY"))
-                        simplify = (fields[1].trim().equals("true"));
-                    else if (fields[0].trim().equals("FONT_SIZE"))
-                        fontSize = Integer.parseInt(fields[1].trim());
-                    else if (fields[0].trim().equals("DEBUG"))
-                        DEBUG = (fields[1].trim().equals("true"));
+            try {
+                BufferedReader stConfig = new BufferedReader(new FileReader(CONFIG)); 
+                while ((line = stConfig.readLine()) != null) {
+                    if (line.contains("=")) {
+                        fields = line.split("=");
+                        if (fields[0].trim().equals("PLOVER_CONFIG"))
+                            ploverConfig = fields[1].trim();
+                        else if (fields[0].trim().equals("LIMIT_RESULTS"))
+                            limit = Integer.parseInt(fields[1].trim());
+                        else if (fields[0].trim().equals("SIMPLIFY"))
+                            simplify = (fields[1].trim().equals("true"));
+                        else if (fields[0].trim().equals("FONT_SIZE"))
+                            fontSize = Integer.parseInt(fields[1].trim());
+                        else if (fields[0].trim().equals("DEBUG"))
+                            DEBUG = (fields[1].trim().equals("true"));
+                    }
                 }
-                line = in.readLine();
+                stConfig.close();
+            } catch (IOException e) {
+                System.err.println("Error reading config file: "+CONFIG);
             }
-            in.close();
         }
         font = new Font("Sans", Font.PLAIN, fontSize);
         if (new File(ploverConfig).isFile()) {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
-            in = new In(ploverConfig);
-            line = in.readLine();
-            while ((line != null) && (dictionaryFile == null)) {
-                fields = line.split("=");
-                if (fields.length >= 2) {
-                    if (fields[0].trim().equals("dictionary_file")) 
-                        dictionaryFile = fields[1].trim();
-                    if (fields[0].trim().equals("log_file")) 
-                        logFile = fields[1].trim();
+            try {
+                BufferedReader pConfig = new BufferedReader(new FileReader(ploverConfig));
+                while (((line = pConfig.readLine()) != null) && (dictionaryFile == null)) {
+                    fields = line.split("=");
+                    if (fields.length >= 2) {
+                        if (fields[0].trim().equals("dictionary_file")) 
+                            dictionaryFile = fields[1].trim();
+                        if (fields[0].trim().equals("log_file")) 
+                            logFile = fields[1].trim();
+                    }
                 }
-                line = in.readLine();
+                pConfig.close();
+            } catch (IOException e) {
+                System.err.println("Error reading Plover configuration file");
             }
-            in.close();
             if (dictionaryFile == null)
                 throw new java.lang.IllegalArgumentException("Unable to locate Plover dictionary file");
             if (logFile == null)

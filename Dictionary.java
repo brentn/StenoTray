@@ -138,11 +138,22 @@ public class Dictionary {
     // return all defined words/phrases that start with what we have already
     // returns an iterable sorted from shortest to longest
     // ie. fingerspell part of a word to autoLookup the correct stroke
-    public Iterable<Pair> autoLookup(String prefix) {
+    public Iterable<Pair> autoLookup(String stringPrefix, String strokePrefix) {
         List<Pair> result = new ArrayList<Pair>();
-        if (prefix.length() <= 2) return result; // don't do lookup for short prefixes
-        for (String phrase : english.prefixMatch(prefix)) {
-            result.add(new Pair(english.get(phrase),phrase));
+        if (stringPrefix.length() > 2) { // don't do lookup for short prefixes
+            for (String phrase : english.prefixMatch(stringPrefix)) {
+                result.add(new Pair(english.get(phrase),phrase));
+            }
+        }
+        if (strokePrefix.length() >= 2) {
+            if (strokePrefix.charAt(strokePrefix.length()-1) != '/')
+                strokePrefix += "/"; // ensure the stroke is complete
+            int slashCount = countSlashes(strokePrefix); // only lookup definitions with 1 more stroke than what we have already
+            for (String stroke : definitions.prefixMatch(strokePrefix)) {
+                if (countSlashes(stroke) == slashCount) {
+                    result.add(new Pair(new StrokeSet(stroke), definitions.get(stroke)));
+                }
+            }
         }
         Collections.sort(result,new ByPhraseLength());
         return result;
@@ -190,6 +201,14 @@ public class Dictionary {
         }   
     }
 
+    // count the number of slashes in a string
+    private static int countSlashes(String s) {
+        int result = 0;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == '/') result++;
+        }
+        return result;
+    }
 
     // read a line from a file, catching errors
     private static String readLine(BufferedReader file) {
@@ -285,7 +304,7 @@ public class Dictionary {
         StdOut.println(dictionary.buildUp("interloping"));
         StdOut.println(dictionary.lookup("interloping is what it's all about"));
         StdOut.println(dictionary.translate("SPWR/HR*/O*/P*/-G/S/WHA/T-S/AUL/P/"));
-        for (Pair p : dictionary.autoLookup("unic")) {
+        for (Pair p : dictionary.autoLookup("unic","HREUL")) {
             StdOut.println(p.translation()+ " --> "+p.stroke());
         };
         //StdOut.println(dictionary.shorter("HRAEUD/EUS/STK/SKWRE/PHEPB/-F/-T/SKWRUR"));

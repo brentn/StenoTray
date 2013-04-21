@@ -2,6 +2,9 @@ import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class Dictionary {
     
@@ -19,9 +22,9 @@ public class Dictionary {
         StrokeSet strokeSet;
         String line = "";
         String[] fields;
-        In in = new In(filename);
-        line = in.readLine();
-        while (line != null) {
+        try {
+            BufferedReader file = new BufferedReader(new FileReader(filename)); 
+        while ((line = readLine(file)) != null) {
             fields = line.split("\"");
             if ((fields.length) >= 3 && (fields[3].length() > 0)) {
                 stroke = fields[1];
@@ -34,7 +37,10 @@ public class Dictionary {
                 english.put(translation, strokeSet);
                 definitions.put(stroke, translation);
             }
-            line = in.readLine();
+        }
+        file.close();
+        } catch (IOException e) {
+            System.err.println("Could not find file: "+filename);
         }
     }
     
@@ -185,6 +191,16 @@ public class Dictionary {
     }
 
 
+    // read a line from a file, catching errors
+    private static String readLine(BufferedReader file) {
+        String result = "";
+        try {
+            result = file.readLine();
+        } catch (IOException e) {
+            System.err.println("Error reading from file");
+        }
+        return result;
+    }
     
     // use fingerspelling, prefixes and suffixes to build an efficient way to
     // stroke words not found in the dictionary
