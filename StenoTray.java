@@ -37,7 +37,7 @@ public class StenoTray extends JFrame {
         this.setAlwaysOnTop(true);
         panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
         loadDictionary();
-        //updateGUI("","");
+        updateGUI("","");
         tailLogFile();
     }
     
@@ -48,19 +48,18 @@ public class StenoTray extends JFrame {
     // PRIVATE METHODS
     
     private void updateGUI(String phrase, String stroke) {
-        if (phrase == null) return;
+        if (stroke == null) return;
+        if (phrase == null) {phrase = "";}
         panel.removeAll();
         repaint();
-        if ((phrase.length() > 0) && (!phrase.equals("None"))) {
-            int count = 0;
-            for (Dictionary.Pair pair : dictionary.autoLookup(phrase, stroke)) {
-                JLabel label = new JLabel(pair.translation()+" | "+simplify(pair.stroke()), JLabel.CENTER);
-                label.setFont(font);
-                panel.add(label);
-                if (!(limit == 0) || (count < limit))
-                    break;
-                count++;
-            }
+        int count = 0;
+        for (Dictionary.Pair pair : dictionary.autoLookup(phrase, stroke)) {
+            JLabel label = new JLabel(pair.translation()+" | "+simplify(pair.stroke()), JLabel.CENTER);
+            label.setFont(font);
+            panel.add(label);
+            if (!(limit == 0) || (count < limit))
+                break;
+            count++;
         }
         this.add(scrollPane);
         this.validate();
@@ -72,14 +71,13 @@ public class StenoTray extends JFrame {
         Reader fileReader = new FileReader(logFile);
         BufferedReader input = new BufferedReader(fileReader);
         String line = null;
-        String stroke;
+        String stenoStroke;
         Translation translation = new Translation("");
-        // position at the end of the file
-        for (line = input.readLine(); line != null; line = input.readLine()) {};
+        for (line = input.readLine(); line != null; line = input.readLine()) {};  // position at the end of the file
         while (true) {
             if ((line = input.readLine()) != null) {
-                stroke = parseLogLine(line, translation);
-                updateGUI(translation.phrase(), stroke);
+                stenoStroke = parseLogLine(line, translation);
+                updateGUI(translation.phrase(), stenoStroke);
                 continue;
             }
             try {
@@ -106,7 +104,7 @@ public class StenoTray extends JFrame {
                 line = line.substring(line.indexOf("Translation")+12,line.length()-1);
                 stroke = line.split(":")[1].trim();
                 translation.add(stroke);
-                if (DEBUG) System.out.println(line.split(":")[0].trim());
+                if (DEBUG) System.out.println("stroke:"+line.split(":")[0].trim());
                 return line.split(":")[0].trim();
             }
         } else { // new log style 

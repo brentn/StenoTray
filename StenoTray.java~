@@ -37,7 +37,7 @@ public class StenoTray extends JFrame {
         this.setAlwaysOnTop(true);
         panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
         loadDictionary();
-        updateGUI("");
+        //updateGUI("","");
         tailLogFile();
     }
     
@@ -47,16 +47,15 @@ public class StenoTray extends JFrame {
     
     // PRIVATE METHODS
     
-    private void updateGUI(String phrase) {
+    private void updateGUI(String phrase, String stroke) {
         if (phrase == null) return;
         panel.removeAll();
         repaint();
         if ((phrase.length() > 0) && (!phrase.equals("None"))) {
             int count = 0;
-            for (Dictionary.Pair pair : dictionary.autoLookup(phrase)) {
+            for (Dictionary.Pair pair : dictionary.autoLookup(phrase, stroke)) {
                 JLabel label = new JLabel(pair.translation()+" | "+simplify(pair.stroke()), JLabel.CENTER);
                 label.setFont(font);
-                label.setToolTipText(pair.stroke());
                 panel.add(label);
                 if (!(limit == 0) || (count < limit))
                     break;
@@ -73,13 +72,14 @@ public class StenoTray extends JFrame {
         Reader fileReader = new FileReader(logFile);
         BufferedReader input = new BufferedReader(fileReader);
         String line = null;
+        String stroke;
         Translation translation = new Translation("");
         // position at the end of the file
         for (line = input.readLine(); line != null; line = input.readLine()) {};
         while (true) {
             if ((line = input.readLine()) != null) {
-                parseLogLine(line, translation);
-                updateGUI(translation.phrase());
+                stroke = parseLogLine(line, translation);
+                updateGUI(translation.phrase(), stroke);
                 continue;
             }
             try {
@@ -92,8 +92,8 @@ public class StenoTray extends JFrame {
         input.close();
     }
     
-    private void parseLogLine(String line, Translation translation) {
-        if (line.indexOf("Translation") == -1) return;
+    private String parseLogLine(String line, Translation translation) {
+        if (line.indexOf("Translation") == -1) return "";
         String stroke, prevStroke, undoStroke;
         String[] parts;
         if (line.indexOf("Translation((") == -1) { // old style log
@@ -101,12 +101,13 @@ public class StenoTray extends JFrame {
                 line = line.substring(line.indexOf("Translation")+12,line.length()-1);
                 stroke = line.split(":")[1].trim();
                 translation.delete(stroke);
-                return;
+                return stroke;
             } else { 
                 line = line.substring(line.indexOf("Translation")+12,line.length()-1);
                 stroke = line.split(":")[1].trim();
                 translation.add(stroke);
-                return;
+                if (DEBUG) System.out.println(line.split(":")[0].trim());
+                return line.split(":")[0].trim();
             }
         } else { // new log style 
             line = line.substring(line.indexOf("(")+1);
@@ -130,7 +131,7 @@ public class StenoTray extends JFrame {
                 prevStroke = prevStroke.substring(0,prevStroke.length()-1);
             }
             translation.add(undoStroke,stroke,prevStroke);
-            return;
+            return stroke;
         }
     }
     
@@ -330,4 +331,5 @@ public class StenoTray extends JFrame {
             return (s.charAt(1) == '^');
         }
     }
+    
 }
