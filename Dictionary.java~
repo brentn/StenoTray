@@ -1,9 +1,9 @@
 import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Dictionary {
-    
-    private static final Comparator<Pair> BYSTROKELENGTH = new ByStroke();
-    private static final Comparator<Pair> BYPHRASELENGTH = new ByPhrase();
     
     private TST<StrokeSet> english = new TST<StrokeSet>();
     private TST<String> definitions = new TST<String>();
@@ -49,8 +49,6 @@ public class Dictionary {
         public String translation() { return translation; }
         public String stroke() { return strokes.shortest(); }
     }
-    
-
     
     // spell out a word letter-by-letter
     public String fingerspell(String word) {
@@ -135,11 +133,12 @@ public class Dictionary {
     // returns an iterable sorted from shortest to longest
     // ie. fingerspell part of a word to autoLookup the correct stroke
     public Iterable<Pair> autoLookup(String prefix) {
-        MinPQ<Pair> result = new MinPQ<Pair>(BYPHRASELENGTH);
+        List<Pair> result = new ArrayList<Pair>();
         if (prefix.length() <= 2) return result; // don't do lookup for short prefixes
         for (String phrase : english.prefixMatch(prefix)) {
-            result.insert(new Pair(english.get(phrase),phrase));
-       }
+            result.add(new Pair(english.get(phrase),phrase));
+        }
+        Collections.sort(result,new ByPhraseLength());
         return result;
     }
     
@@ -147,9 +146,9 @@ public class Dictionary {
     // PRIVATE CLASSES AND METHODS
     
     private class StrokeSet {
-        private Bag<String> strokes;      
+        private List<String> strokes;      
         public StrokeSet(String stroke) {
-            strokes = new Bag<String>();
+            strokes = new ArrayList<String>();
             add(stroke);
         }
         public void add(String stroke) { strokes.add(stroke); }
@@ -163,7 +162,7 @@ public class Dictionary {
         }
     }
     
-    private static class ByPhrase implements Comparator<Pair> {
+    private static class ByPhraseLength implements Comparator<Pair> {
         public int compare(Pair p1, Pair p2) {
             if ((p1 == null) || (p2 == null)) 
                 throw new java.lang.IllegalArgumentException();
@@ -174,7 +173,7 @@ public class Dictionary {
         }
     }
     
-    private static class ByStroke implements Comparator<Pair> {
+    private static class ByStrokeLength implements Comparator<Pair> {
         public int compare(Pair p1, Pair p2) {
             if ((p1 == null) || (p2 == null)) 
                 throw new java.lang.IllegalArgumentException();

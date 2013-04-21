@@ -286,11 +286,15 @@ public class StenoTray extends JFrame {
         public void delete(String stroke) {
             if (prevPhrase == null || prevPhrase == "None") {
                 stroke = null;
+                prevPhrase = null;
                 return;
             }
             if ((joinStart(stroke)) || (glue && hasGlue(stroke)) && (prevPhrase != null)) {
                 stroke = processAttributes(stroke);
-                phrase = phrase.substring(0,phrase.length()-(stroke.length()+1));
+                if ((stroke.length()+1) > phrase.length())
+                    phrase = null;
+                else
+                    phrase = phrase.substring(0,phrase.length()-(stroke.length()+1));
                 prevPhrase = null;
             } else {
                 phrase = prevPhrase;
