@@ -138,6 +138,16 @@ public class Dictionary {
     // return all defined words/phrases that start with what we have already
     // returns an iterable sorted from shortest to longest
     // ie. fingerspell part of a word to autoLookup the correct stroke
+//    public Iterable<Pair> autoLookup(String prefix) {
+//        List<Pair> result = new ArrayList<Pair>();
+//        if (prefix.length() <= 2) return result; // don't do lookup for short prefixes
+//        for (String phrase : english.prefixMatch(prefix)) {
+//            result.add(new Pair(english.get(phrase),phrase));
+//        }
+//        Collections.sort(result,new ByPhraseLength());
+//        return result;
+//    }
+
     public Iterable<Pair> autoLookup(String stringPrefix, String strokePrefix) {
         List<Pair> result = new ArrayList<Pair>();
         if (stringPrefix.length() > 2) { // don't do lookup for short prefixes

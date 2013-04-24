@@ -1,6 +1,10 @@
 import java.awt.Dimension; 
 import java.awt.Font;
 import java.awt.Toolkit;
+import java.awt.Color;
+import java.awt.BorderLayout;
+import java.awt.GridLayout;
+import java.awt.GridBagConstraints;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
@@ -11,28 +15,61 @@ import java.io.Reader;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Vector;
+import java.util.Set;
+import java.util.HashSet;
 
 public class StenoTray extends JFrame {
-    
+    static String mkPath(String path1, String... paths)
+    {
+        StringBuilder sb = new StringBuilder(path1);
+        for (String p : paths)
+        {
+            sb.append(PSEP + p);
+        }
+        return sb.toString();
+    }
+
+
     // I am guessing the plover config is located at this location on all systems
-    private static final String CONFIG = System.getProperty("user.home")+"/.config/plover/stenotray.cfg";
+    private static final String PSEP       = System.getProperty("file.separator");
+    private static final String UHOME      = System.getProperty("user.home");
+    private static final String PLOVER_DIR;
+    static {
+        String[] innerDirsWin = {"AppData", "Local", "plover", "plover"};
+        String[] innerDirsOther = {".config", "plover"};
+        String[] innerDirs;
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            PLOVER_DIR = mkPath(UHOME, "AppData", "Local", "plover", "plover");
+        } else {
+            PLOVER_DIR = mkPath(UHOME, ".config", "plover");
+        }
+    }
+
+    private static final String CONFIG_DIR = mkPath(PLOVER_DIR, "stenotray.cfg");
     private static boolean DEBUG = false;
     // global variables
-    private static String dictionaryFile = null;
-    private static String logFile = System.getProperty("user.home")+"/.config/plover/plover.log";;
+    private static String dictionaryFile = mkPath(PLOVER_DIR, "dict.json");
+
+    private static String logFile = mkPath(PLOVER_DIR, "plover.log");
     private static Dictionary dictionary; // the main dictionary
     private int limit = 0; // limit the number of responses
     private boolean simplify = false;
     private Dimension screenSize;
     private JPanel panel = new JPanel();
     private JScrollPane scrollPane = new JScrollPane(panel);
-    private Font font;
-        
+    private Font font, strokeFont;
+
     public StenoTray() throws java.io.IOException {
         screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setPreferredSize(new Dimension(150, 375));
-        this.setLocation(screenSize.width-150,screenSize.height-600);
+
+        final int prefSizeX = 400;
+        final int prefSizeY = 650;
+        final int taskBarSize = 56;
+
+        this.setPreferredSize(new Dimension(prefSizeX, prefSizeY));
+        this.setLocation(screenSize.width-prefSizeX,screenSize.height-prefSizeY-taskBarSize);
         this.setFocusableWindowState(false);
         this.setAlwaysOnTop(true);
         panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
@@ -40,48 +77,156 @@ public class StenoTray extends JFrame {
         updateGUI("","");
         tailLogFile();
     }
-    
-    public static void main(String[] args) throws java.io.IOException {        
+
+    public static void main(String[] args) throws java.io.IOException {
         StenoTray tray = new StenoTray();
     }
-    
+
     // PRIVATE METHODS
-    
+
+    private static boolean hasGrammaticalEnding(String trn, String phrase)
+    {
+        // is plural/gerund/future/possessive/... form of the word
+        String[] grammaticalEndings = { "s", "ing", "'ll", "'s", "'d", "'ve" };
+        return hasEnding(trn, phrase, grammaticalEndings);
+    }
+
+    private static boolean hasEnding(String trn, String phrase, String[] endings)
+    {
+        for (String ending : endings) {
+            if (trn.equals(phrase + ending))    return true;
+        }
+        return false;
+    }
+
+    private void setLabelVisualStyle(JLabel label, String phrase, String trn, Dictionary.Pair pair, Font thisFont)
+    {
+            label.setFont(thisFont);
+
+            // starts with the full phrase, then a space or a special sequence
+            if (trn.startsWith(phrase + " ") || trn.startsWith(phrase + "{")) {
+                label.setOpaque(true);
+                label.setBackground(new Color(0xaaffaa));
+            }
+
+            if (hasGrammaticalEnding(trn, phrase)) {
+                label.setOpaque(true);
+                label.setBackground(new Color(0xaaaaff));
+            }
+
+            label.setToolTipText(pair.stroke());
+    }
+
+    String colorSteno(String text)
+    {
+        // 0 : left hand side, 1 : lhs vowel, 2 : rhs vowel, 3: right hand side
+        int prevPart = 0;
+        StringBuilder sb = new StringBuilder("<html><font color=\"red\">");
+
+        String lhsVowels = "AO";
+        String rhsVowels = "EUI";
+
+        String bgColors[] = { "",                "bgcolor=\"red\"", "bgcolor=\"blue\"",  "",               "" };
+        String fgColors[] = { "color=\"red\"",   "color=\"white\"",  "color=\"white\"",  "color=\"blue\"", "" };
+
+        for (char c : text.toCharArray())
+        {
+            int currPart = prevPart;
+            boolean shouldColor = true;
+
+            if (c == '/') {
+                currPart = 0;
+                shouldColor = false;
+            } else if (c == '*') {
+//                currPart = 2;
+                shouldColor = false;
+            } else if (c == '-') {
+                currPart = 3;
+                shouldColor = false;
+            } else if (lhsVowels.indexOf(c) != -1) {
+                currPart = 1;
+            } else if (rhsVowels.indexOf(c) != -1) {
+                currPart = 2;
+            } else if ((currPart == 1 || currPart == 2) && lhsVowels.indexOf(c) == -1 && rhsVowels.indexOf(c) == -1) {
+                currPart = 3;
+            }
+
+            if (currPart == prevPart ) {
+                sb.append(c);
+                continue;
+            }
+
+            if (shouldColor) {
+                sb.append(String.format("</font><font %s %s>%c", fgColors[currPart], bgColors[currPart], c));
+            } else {
+                sb.append(String.format("</font>%c<font %s %s>", c, fgColors[currPart], bgColors[currPart]));
+            }
+
+            prevPart = currPart;
+        }
+
+        sb.append("</font></html>");
+        return sb.toString();
+    }
+
+    public static String strJoin(String[] aArr, String sSep) {
+        StringBuilder sbStr = new StringBuilder();
+        for (int i = 0, il = aArr.length; i < il; i++) {
+            if (i > 0)
+                sbStr.append(sSep);
+            sbStr.append(aArr[i]);
+        }
+        return sbStr.toString();
+    }
+
     private void updateGUI(String phrase, String stroke) {
         if (stroke == null) return;
-        if (phrase == null) {phrase = "";}
+        if (phrase == null) phrase = "";
         panel.removeAll();
         repaint();
-        int count = 0;
+
+        panel.setLayout(new BorderLayout());
+        JPanel panel2 = new JPanel();
+        panel2.setLayout(new GridLayout(0,2));
+        panel.add(panel2, BorderLayout.NORTH);
+        String fontStyle;
+        String phraseRest;
+        String label2Text;
+        String trn;
         for (Dictionary.Pair pair : dictionary.autoLookup(phrase, stroke)) {
-            JLabel label = new JLabel(pair.translation()+" | "+simplify(pair.stroke()), JLabel.CENTER);
-            label.setFont(font);
-            panel.add(label);
-            if (!(limit == 0) || (count < limit))
-                break;
-            count++;
+            JLabel label = new JLabel(pair.translation());        
+            label2Text = colorSteno(simplify(pair.stroke()));
+            JLabel label2 = new JLabel(label2Text);
+
+            setLabelVisualStyle(label2, phrase, "", pair, strokeFont);
+
+            panel2.add(label);
+            panel2.add(label2);
         }
+
         this.add(scrollPane);
         this.validate();
         this.pack();
         this.setVisible(true);
     }
-    
+
+
     private void tailLogFile() throws java.io.IOException {
         Reader fileReader = new FileReader(logFile);
-        BufferedReader input = new BufferedReader(fileReader);
+        final BufferedReader input = new BufferedReader(fileReader);
         String line = null;
         String stenoStroke;
-        Translation translation = new Translation("");
+        final Translation translation = new Translation("");
         for (line = input.readLine(); line != null; line = input.readLine()) {};  // position at the end of the file
         while (true) {
             if ((line = input.readLine()) != null) {
                 stenoStroke = parseLogLine(line, translation);
-                updateGUI(translation.phrase(), stenoStroke);
+                String phrase = translation.phrase();
+                updateGUI(phrase, stenoStroke);
                 continue;
             }
             try {
-                Thread.sleep(500L);
+                Thread.sleep(100L);
             } catch (InterruptedException x) {
                 Thread.currentThread().interrupt();
                 break;
@@ -157,37 +302,38 @@ public class StenoTray extends JFrame {
             } else {
                 left = stroke;
             }
-            if (left.contains("STP") && left.contains("KW")) 
-                left = left.replace("STP","Z").replace("KW","");
-            if (left.contains("S") && left.contains("KWR"))
-                left = left.replace("S","J").replace("KWR","");
-            if (left.contains("TP") && left.contains("KW"))
-                left = left.replace("TP","G").replace("KW","");
-            if (left.contains("T") && left.contains("K"))
-                left = left.replace("T","D").replace("K","");
-            if (left.contains("P") && left.contains("W"))
-                left = left.replace("P","B").replace("W","");
-            if (left.contains("H") && left.contains("R"))
-                left = left.replace("H","L").replace("R","");
+            left = left.replace("STKPW","Z");
+            if (left.contains("S") && left.contains("K") && left.contains("W") && left.contains("R"))
+                left = left.replace("S","J").replace("K","").replace("W","").replace("R","");
+            left = left.replace("TKPW","G");
+            if (left.contains("T") && left.contains("P") && left.contains("H"))
+                left = left.replace("T","N").replace("P","").replace("H","");
+            if (left.contains("K") && left.contains("W") && left.contains("R"))
+                left = left.replace("K","Y").replace("W","").replace("R","");
+            if (left.contains("T") && left.contains("P"))
+                left = left.replace("T","F").replace("P","");
+            if (left.contains("P") && left.contains("H"))
+                left = left.replace("P","M").replace("H","");
+            if (left.contains("K") && left.contains("W"))
+                left = left.replace("K","Q").replace("W","");
+            left = left.replace("TK","D");
+            left = left.replace("PW","B");
+            left = left.replace("HR","L");
             if (left.contains("K") && left.contains("P"))
                 left = left.replace("K","X").replace("P","");
             if (left.contains("K") && left.contains("R"))
                 left = left.replace("K","C").replace("R","");
             if (left.contains("S") && left.contains("R"))
                 left = left.replace("S","V").replace("R","");
-            left = left.replace("TPH","N");
-            left = left.replace("KWR","Y");
-            left = left.replace("TP","F");
-            left = left.replace("PH","M");
-            left = left.replace("KW","Q");
             vowels = vowels.replace("EU","I");
-            if (right.contains("PL") && right.contains("BG"))
-                right = right.replace("PL","J").replace("BG","");
-            if (right.contains("P") && right.contains("B"))
-                right = right.replace("P","N").replace("B","");
-            right = right.replace("PL","M");
-            right = right.replace("BGS","X");
-            right = right.replace("BG","K");
+            right = right.replace("PBLG","J");
+            if (right.contains("B") && right.contains("G") && right.contains("S"))
+                right = right.replace("B","X").replace("G","").replace("S","");
+            right = right.replace("PB","N");
+            if (right.contains("P") && right.contains("L"))
+                right = right.replace("P","M").replace("L","");
+            if (right.contains("B") && right.contains("G"))
+                right = right.replace("B","K").replace("G","");
             result += left+vowels+right+"/";
         }
         return result.substring(0,result.length()-1);
@@ -201,14 +347,14 @@ public class StenoTray extends JFrame {
     }
     
     private void readConfig() throws java.io.FileNotFoundException {
-        String ploverConfig = System.getProperty("user.home")+"/.config/plover/plover.cfg";
+        String ploverConfig = mkPath(PLOVER_DIR, "plover.cfg");
         int fontSize = 12;
         String line = "";
         String[] fields;
-        if (new File(CONFIG).isFile()) {
-            if (DEBUG) System.out.println("Loading config file ("+CONFIG+")...");
+        if (new File(CONFIG_DIR).isFile()) {
+            if (DEBUG) System.out.println("Loading config file ("+CONFIG_DIR+")...");
             try {
-                BufferedReader stConfig = new BufferedReader(new FileReader(CONFIG)); 
+                BufferedReader stConfig = new BufferedReader(new FileReader(CONFIG_DIR));
                 while ((line = stConfig.readLine()) != null) {
                     if (line.contains("=")) {
                         fields = line.split("=");
@@ -226,10 +372,11 @@ public class StenoTray extends JFrame {
                 }
                 stConfig.close();
             } catch (IOException e) {
-                System.err.println("Error reading config file: "+CONFIG);
+                System.err.println("Error reading config file: "+CONFIG_DIR);
             }
         }
         font = new Font("Sans", Font.PLAIN, fontSize);
+        strokeFont = new Font("Consolas", Font.PLAIN, (fontSize+10));
         if (new File(ploverConfig).isFile()) {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {
@@ -237,9 +384,9 @@ public class StenoTray extends JFrame {
                 while (((line = pConfig.readLine()) != null) && (dictionaryFile == null)) {
                     fields = line.split("=");
                     if (fields.length >= 2) {
-                        if (fields[0].trim().equals("dictionary_file")) 
+                        if (fields[0].trim().equals("dictionary_file"))
                             dictionaryFile = fields[1].trim();
-                        if (fields[0].trim().equals("log_file")) 
+                        if (fields[0].trim().equals("log_file"))
                             logFile = fields[1].trim();
                     }
                 }
@@ -255,7 +402,7 @@ public class StenoTray extends JFrame {
             throw new java.io.FileNotFoundException("Cannot locate plover config file");
         }
     }
-    
+
     private class Translation {
         private String prevPhrase = null;
         private String phrase = null;
@@ -329,5 +476,4 @@ public class StenoTray extends JFrame {
             return (s.charAt(1) == '^');
         }
     }
-    
 }
