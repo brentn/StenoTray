@@ -55,11 +55,10 @@ public class StenoTray extends JFrame {
     private static Dictionary dictionary; // the main dictionary
     private int limit = 0; // limit the number of responses
     private boolean simplify = false;
-    private boolean asteriskToFront = true;
     private Dimension screenSize;
     private JPanel panel = new JPanel();
     private JScrollPane scrollPane = new JScrollPane(panel);
-    private Font font;
+    private Font font, strokeFont;
 
     public StenoTray() throws java.io.IOException {
         screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -75,7 +74,7 @@ public class StenoTray extends JFrame {
         this.setAlwaysOnTop(true);
         panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
         loadDictionary();
-        updateGUI(new Vector<String>(),"");
+        updateGUI("","");
         tailLogFile();
     }
 
@@ -152,7 +151,7 @@ public class StenoTray extends JFrame {
                 currPart = 3;
             }
 
-            if (currPart == prevPart && !(asteriskToFront && c == '*')) {
+            if (currPart == prevPart ) {
                 sb.append(c);
                 continue;
             }
@@ -180,130 +179,35 @@ public class StenoTray extends JFrame {
         return sbStr.toString();
     }
 
-    String moveAsteriskToFront(String stroke)
-    {
-        String[] chords = stroke.split("/");
-        for (int i = 0; i < chords.length; ++i)
-        {
-            if (chords[i].indexOf("*") != -1) {
-                chords[i] = "*" + chords[i].replace("*", "");
-            }
-        }
-        return strJoin(chords, "/");
-    }
-
-    private void updateGUI(Vector<String> strings, String stroke) {
+    private void updateGUI(String phrase, String stroke) {
         if (stroke == null) return;
+        if (phrase == null) phrase = "";
         panel.removeAll();
         repaint();
 
         panel.setLayout(new BorderLayout());
-
         JPanel panel2 = new JPanel();
         panel2.setLayout(new GridLayout(0,2));
         panel.add(panel2, BorderLayout.NORTH);
+        String fontStyle;
+        String phraseRest;
+        String label2Text;
+        String trn;
+        for (Dictionary.Pair pair : dictionary.autoLookup(phrase, stroke)) {
+            JLabel label = new JLabel(pair.translation());        
+            label2Text = colorSteno(simplify(pair.stroke()));
+            JLabel label2 = new JLabel(label2Text);
 
-        Set<String> alreadyShowns = new HashSet<String>();
+            setLabelVisualStyle(label2, phrase, "", pair, strokeFont);
 
-        for (int i = 0; i < strings.size(); ++i)
-        {
-            String phrase = "";
-            for (int j = i; j < strings.size(); ++j)
-            {
-                if (strings.get(j) == null) {
-                    phrase = "None";
-                    break;
-                }
-                phrase += strings.get(j) + " ";
-            }
-            phrase = phrase.trim();
-
-            if (!phrase.isEmpty())
-            {
-                Iterable<Dictionary.Pair> lookup = dictionary.autoLookup(phrase, stroke);
-                if (!lookup.iterator().hasNext()) {
-                    // no such expression, remove the first word
-                    strings.remove(i);
-                    --i;
-                    continue;
-                }
-            }
-
-            updateGUIsingleWord(phrase, stroke, panel2, alreadyShowns);
-
-            // a "separator line"
-            JPanel tmpPanel1 = new JPanel();
-            JPanel tmpPanel2 = new JPanel();
-            panel2.add(tmpPanel1);
-            panel2.add(tmpPanel2);
+            panel2.add(label);
+            panel2.add(label2);
         }
+
         this.add(scrollPane);
         this.validate();
         this.pack();
         this.setVisible(true);
-    }
-
-
-    private void updateGUIsingleWord(String phrase, String stroke, JPanel panel2, Set<String> alreadyShowns) {
-        // if the translation is longer than maxTrnSize, ignore it
-        // no limitations if maxTrnSize == 0
-        final int maxTrnSize = 12;
-
-        if (phrase == null || phrase.length() == 0 || phrase.equals("None")) {
-            JLabel label = new JLabel("No known translation");
-            JLabel label2 = new JLabel();
-            panel2.add(label);
-            panel2.add(label2);
-            return;
-        }
-
-
-        int count = 0;
-
-        for (Dictionary.Pair pair : dictionary.autoLookup(phrase, stroke)) {
-            String trn = pair.translation();
-
-            if (alreadyShowns.contains(trn))    continue;
-            if (maxTrnSize > 0 && trn.length() > maxTrnSize)    continue;
-
-            alreadyShowns.add(trn);
-
-//                JLabel label = new JLabel(trn+" | "+simplify(pair.stroke()), JLabel.CENTER);
-            String phraseRest = trn.substring(phrase.length());
-
-            String fontStyle = (hasGrammaticalEnding(trn, phrase)) ? "style=\"font-weight:bold\"" : "";
-            JLabel label;
-
-            if (trn.equals(phrase))
-                label = new JLabel(String.format("<html><b><font color=\"red\">%s</font><font %s>%s</font></b></html>", phrase, fontStyle, phraseRest));
-            else
-                label = new JLabel(String.format("<html><font color=\"red\">%s</font><font %s>%s</font></html>", phrase, fontStyle, phraseRest));
-
-
-//            JLabel label = new JLabel(String.format("<html><font color=\"red\">%s</font></html>", trn));
-            setLabelVisualStyle(label, phrase, trn, pair, font);
-
-
-            String displaystroke = simplify(pair.stroke());
-            if (asteriskToFront)    stroke = moveAsteriskToFront(displaystroke);
-            String label2Text = colorSteno(displaystroke);
-            JLabel label2;
-            if (trn.equals(phrase))
-                label2 = new JLabel("<html><b>" + label2Text + "</b></html>");
-            else
-                label2 = new JLabel(label2Text);
-
-            final int fontSize = 24;
-            Font fixWidthFont = new Font("Consolas", Font.PLAIN, fontSize);
-            setLabelVisualStyle(label2, phrase, trn, pair, fixWidthFont);
-
-            panel2.add(label);
-            panel2.add(label2);
-
-            if (limit != 0 && count >= limit)
-                break;
-            count++;
-        }
     }
 
 
@@ -312,17 +216,13 @@ public class StenoTray extends JFrame {
         final BufferedReader input = new BufferedReader(fileReader);
         String line = null;
         String stenoStroke;
-        Vector<String> strings = new Vector<String>();
         final Translation translation = new Translation("");
         for (line = input.readLine(); line != null; line = input.readLine()) {};  // position at the end of the file
         while (true) {
             if ((line = input.readLine()) != null) {
                 stenoStroke = parseLogLine(line, translation);
                 String phrase = translation.phrase();
-                if (!strings.isEmpty() && phrase != null && phrase.equals(strings.lastElement()))
-                    continue;
-                strings.add(phrase);
-                updateGUI(strings, stenoStroke);
+                updateGUI(phrase, stenoStroke);
                 continue;
             }
             try {
@@ -402,36 +302,38 @@ public class StenoTray extends JFrame {
             } else {
                 left = stroke;
             }
-            if (left.contains("STP") && left.contains("KW")) 
-                left = left.replace("STP","Z").replace("KW","");
-            if (left.contains("S") && left.contains("KWR"))
-                left = left.replace("S","J").replace("KWR","");
-            if (left.contains("TP") && left.contains("KW"))
-                left = left.replace("TP","G").replace("KW","");
-            if (left.contains("T") && left.contains("K"))
-                left = left.replace("T","D").replace("K","");
-            if (left.contains("P") && left.contains("W"))
-                left = left.replace("P","B").replace("W","");
-            if (left.contains("H") && left.contains("R"))
-                left = left.replace("H","L").replace("R","");
+            left = left.replace("STKPW","Z");
+            if (left.contains("S") && left.contains("K") && left.contains("W") && left.contains("R"))
+                left = left.replace("S","J").replace("K","").replace("W","").replace("R","");
+            left = left.replace("TKPW","G");
+            if (left.contains("T") && left.contains("P") && left.contains("H"))
+                left = left.replace("T","N").replace("P","").replace("H","");
+            if (left.contains("K") && left.contains("W") && left.contains("R"))
+                left = left.replace("K","Y").replace("W","").replace("R","");
+            left = left.replace("TK","D");
+            left = left.replace("PW","B");
+            left = left.replace("HR","L");
+            if (left.contains("T") && left.contains("P"))
+                left = left.replace("T","F").replace("P","");
+            if (left.contains("P") && left.contains("H"))
+                left = left.replace("P","M").replace("H","");
+            if (left.contains("K") && left.contains("W"))
+                left = left.replace("K","Q").replace("W","");
             if (left.contains("K") && left.contains("P"))
                 left = left.replace("K","X").replace("P","");
             if (left.contains("K") && left.contains("R"))
                 left = left.replace("K","C").replace("R","");
             if (left.contains("S") && left.contains("R"))
                 left = left.replace("S","V").replace("R","");
-            left = left.replace("TPH","N");
-            left = left.replace("KWR","Y");
-            left = left.replace("TP","F");
-            left = left.replace("PH","M");
-            left = left.replace("KW","Q");
             vowels = vowels.replace("EU","I");
             right = right.replace("PBLG","J");
-            if (right.contains("P") && right.contains("B"))
-                right = right.replace("P","N").replace("B","");
-            right = right.replace("PL","M");
-            right = right.replace("BGS","X");
-            right = right.replace("BG","K");
+            if (right.contains("B") && right.contains("G") && right.contains("S"))
+                right = right.replace("B","X").replace("G","").replace("S","");
+            right = right.replace("PB","N");
+            if (right.contains("P") && right.contains("L"))
+                right = right.replace("P","M").replace("L","");
+            if (right.contains("B") && right.contains("G"))
+                right = right.replace("B","K").replace("G","");
             result += left+vowels+right+"/";
         }
         return result.substring(0,result.length()-1);
@@ -474,6 +376,7 @@ public class StenoTray extends JFrame {
             }
         }
         font = new Font("Sans", Font.PLAIN, fontSize);
+        strokeFont = new Font("Consolas", Font.PLAIN, (fontSize+10));
         if (new File(ploverConfig).isFile()) {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {

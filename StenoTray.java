@@ -31,7 +31,7 @@ public class StenoTray extends JFrame {
     }
 
 
-    // I am guessing the plover config is located at this location on all systems
+    // find the default location of the plover config directory
     private static final String PSEP       = System.getProperty("file.separator");
     private static final String UHOME      = System.getProperty("user.home");
     private static final String PLOVER_DIR;
@@ -48,23 +48,23 @@ public class StenoTray extends JFrame {
 
     private static final String CONFIG_DIR = mkPath(PLOVER_DIR, "stenotray.cfg");
     private static boolean DEBUG = false;
+
     // global variables
     private static String dictionaryFile = mkPath(PLOVER_DIR, "dict.json");
-
     private static String logFile = mkPath(PLOVER_DIR, "plover.log");
     private static Dictionary dictionary; // the main dictionary
     private int limit = 0; // limit the number of responses
     private boolean simplify = false;
     private Dimension screenSize;
-    private JPanel panel = new JPanel();
-    private JScrollPane scrollPane = new JScrollPane(panel);
+    private JPanel mainPanel = new JPanel();
+    private JScrollPane scrollPane = new JScrollPane(mainPanel);
     private Font font, strokeFont;
 
     public StenoTray() throws java.io.IOException {
         screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        final int prefSizeX = 400;
+        final int prefSizeX = 200;
         final int prefSizeY = 650;
         final int taskBarSize = 56;
 
@@ -72,7 +72,7 @@ public class StenoTray extends JFrame {
         this.setLocation(screenSize.width-prefSizeX,screenSize.height-prefSizeY-taskBarSize);
         this.setFocusableWindowState(false);
         this.setAlwaysOnTop(true);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS));
         loadDictionary();
         updateGUI("","");
         tailLogFile();
@@ -82,40 +82,8 @@ public class StenoTray extends JFrame {
         StenoTray tray = new StenoTray();
     }
 
+    
     // PRIVATE METHODS
-
-    private static boolean hasGrammaticalEnding(String trn, String phrase)
-    {
-        // is plural/gerund/future/possessive/... form of the word
-        String[] grammaticalEndings = { "s", "ing", "'ll", "'s", "'d", "'ve" };
-        return hasEnding(trn, phrase, grammaticalEndings);
-    }
-
-    private static boolean hasEnding(String trn, String phrase, String[] endings)
-    {
-        for (String ending : endings) {
-            if (trn.equals(phrase + ending))    return true;
-        }
-        return false;
-    }
-
-    private void setLabelVisualStyle(JLabel label, String phrase, String trn, Dictionary.Pair pair, Font thisFont)
-    {
-            label.setFont(thisFont);
-
-            // starts with the full phrase, then a space or a special sequence
-            if (trn.startsWith(phrase + " ") || trn.startsWith(phrase + "{")) {
-                label.setOpaque(true);
-                label.setBackground(new Color(0xaaffaa));
-            }
-
-            if (hasGrammaticalEnding(trn, phrase)) {
-                label.setOpaque(true);
-                label.setBackground(new Color(0xaaaaff));
-            }
-
-            label.setToolTipText(pair.stroke());
-    }
 
     String colorSteno(String text)
     {
@@ -182,28 +150,21 @@ public class StenoTray extends JFrame {
     private void updateGUI(String phrase, String stroke) {
         if (stroke == null) return;
         if (phrase == null) phrase = "";
-        panel.removeAll();
+        mainPanel.removeAll();
         repaint();
 
-        panel.setLayout(new BorderLayout());
-        JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayout(0,2));
-        panel.add(panel2, BorderLayout.NORTH);
-        String fontStyle;
-        String phraseRest;
-        String label2Text;
-        String trn;
+        mainPanel.setLayout(new BorderLayout());
+        JPanel strokePanel = new JPanel();
+        strokePanel.setLayout(new GridLayout(0,2));
+        mainPanel.add(strokePanel, BorderLayout.NORTH);
         for (Dictionary.Pair pair : dictionary.autoLookup(phrase, stroke)) {
-            JLabel label = new JLabel(pair.translation());        
-            label2Text = colorSteno(simplify(pair.stroke()));
-            JLabel label2 = new JLabel(label2Text);
+            JLabel translationLabel = new JLabel(pair.translation());        
+            JLabel strokeLabel = new JLabel(colorSteno(simplify(pair.stroke())));
+            strokeLabel.setFont(strokeFont);
 
-            setLabelVisualStyle(label2, phrase, "", pair, strokeFont);
-
-            panel2.add(label);
-            panel2.add(label2);
+            strokePanel.add(translationLabel);
+            strokePanel.add(strokeLabel);
         }
-
         this.add(scrollPane);
         this.validate();
         this.pack();
@@ -216,7 +177,7 @@ public class StenoTray extends JFrame {
         final BufferedReader input = new BufferedReader(fileReader);
         String line = null;
         String stenoStroke;
-        final Translation translation = new Translation("");
+        Translation translation = new Translation("");
         for (line = input.readLine(); line != null; line = input.readLine()) {};  // position at the end of the file
         while (true) {
             if ((line = input.readLine()) != null) {
@@ -310,15 +271,15 @@ public class StenoTray extends JFrame {
                 left = left.replace("T","N").replace("P","").replace("H","");
             if (left.contains("K") && left.contains("W") && left.contains("R"))
                 left = left.replace("K","Y").replace("W","").replace("R","");
+            left = left.replace("TK","D");
+            left = left.replace("PW","B");
+            left = left.replace("HR","L");
             if (left.contains("T") && left.contains("P"))
                 left = left.replace("T","F").replace("P","");
             if (left.contains("P") && left.contains("H"))
                 left = left.replace("P","M").replace("H","");
             if (left.contains("K") && left.contains("W"))
                 left = left.replace("K","Q").replace("W","");
-            left = left.replace("TK","D");
-            left = left.replace("PW","B");
-            left = left.replace("HR","L");
             if (left.contains("K") && left.contains("P"))
                 left = left.replace("K","X").replace("P","");
             if (left.contains("K") && left.contains("R"))
@@ -376,7 +337,7 @@ public class StenoTray extends JFrame {
             }
         }
         font = new Font("Sans", Font.PLAIN, fontSize);
-        strokeFont = new Font("Consolas", Font.PLAIN, (fontSize+10));
+        strokeFont = new Font("Consolas", Font.PLAIN, (fontSize+5));
         if (new File(ploverConfig).isFile()) {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {
@@ -455,16 +416,11 @@ public class StenoTray extends JFrame {
             if ((s.charAt(0) != '{') || (s.charAt(s.length()-1) != '}')) return s;
             int trimStart = 1;
             int trimEnd = 1;
-            if (hasGlue(s)) {
-                glue=true;
-                trimStart++;
-            } else if (joinStart(s)) {
-                trimStart++;
-            }
-            if (s.charAt(s.length()-1) == '^') {
-                joinEnd=true;
-                trimEnd++;
-            }
+            glue=hasGlue(s);
+            joinEnd=joinEnd(s);
+            if (glue) trimStart++;
+            if (joinStart(s)) trimStart++;
+            if (joinEnd) trimEnd++;
             return s.substring(trimStart,s.length()-trimEnd);
         }
         private boolean hasGlue(String s) {
@@ -474,6 +430,10 @@ public class StenoTray extends JFrame {
         private boolean joinStart(String s) {
             if (s == null || s.length()<2) return false;
             return (s.charAt(1) == '^');
+        }
+        private boolean joinEnd(String s) {
+            if (s == null || s.length()<2) return false;
+            return (s.charAt(s.length()-1) == '^');
         }
     }
 }
