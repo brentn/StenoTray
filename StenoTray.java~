@@ -3,6 +3,7 @@ import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.Color;
 import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.GridBagConstraints;
 import javax.swing.JFrame;
@@ -28,7 +29,7 @@ public class StenoTray extends JFrame {
             sb.append(PSEP + p);
         }
         return sb.toString();
-    }
+    };
 
 
     // find the default location of the plover config directory
@@ -72,7 +73,7 @@ public class StenoTray extends JFrame {
         this.setLocation(screenSize.width-prefSizeX,screenSize.height-prefSizeY-taskBarSize);
         this.setFocusableWindowState(false);
         this.setAlwaysOnTop(true);
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS));
+        mainPanel.setLayout(new BorderLayout());
         loadDictionary();
         updateGUI("","");
         tailLogFile();
@@ -137,33 +138,23 @@ public class StenoTray extends JFrame {
         return sb.toString();
     }
 
-    public static String strJoin(String[] aArr, String sSep) {
-        StringBuilder sbStr = new StringBuilder();
-        for (int i = 0, il = aArr.length; i < il; i++) {
-            if (i > 0)
-                sbStr.append(sSep);
-            sbStr.append(aArr[i]);
-        }
-        return sbStr.toString();
-    }
-
     private void updateGUI(String phrase, String stroke) {
         if (stroke == null) return;
         if (phrase == null) phrase = "";
         mainPanel.removeAll();
         repaint();
-
-        mainPanel.setLayout(new BorderLayout());
-        JPanel strokePanel = new JPanel();
-        strokePanel.setLayout(new GridLayout(0,2));
-        mainPanel.add(strokePanel, BorderLayout.NORTH);
+        JPanel list = new JPanel();
+        list.setLayout(new BoxLayout(list, BoxLayout.PAGE_AXIS));
+        mainPanel.add(list, BorderLayout.NORTH);
         for (Dictionary.Pair pair : dictionary.autoLookup(phrase, stroke)) {
+            JPanel line = new JPanel();
+            line.setLayout(new FlowLayout(FlowLayout.LEFT));
             JLabel translationLabel = new JLabel(pair.translation());        
             JLabel strokeLabel = new JLabel(colorSteno(simplify(pair.stroke())));
             strokeLabel.setFont(strokeFont);
-
-            strokePanel.add(translationLabel);
-            strokePanel.add(strokeLabel);
+            line.add(translationLabel);
+            line.add(strokeLabel);
+            list.add(line, BorderLayout.NORTH);
         }
         this.add(scrollPane);
         this.validate();
@@ -337,7 +328,7 @@ public class StenoTray extends JFrame {
             }
         }
         font = new Font("Sans", Font.PLAIN, fontSize);
-        strokeFont = new Font("Consolas", Font.PLAIN, (fontSize+5));
+        strokeFont = new Font("Consolas", Font.PLAIN, (fontSize+4));
         if (new File(ploverConfig).isFile()) {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {
@@ -373,6 +364,8 @@ public class StenoTray extends JFrame {
         private boolean joinEnd = false;
         public Translation(String input) {
             history = new String[HIST_SIZE];
+            for (int i=0; i < HIST_SIZE; i++)
+                history[i]="00";
             histPointer = 0;
             phrase = processAttributes(input.trim());
         }
@@ -390,7 +383,7 @@ public class StenoTray extends JFrame {
                     phrase = processAttributes(stroke);
                 }
             }
-            if (DEBUG) System.out.println("->"+stroke+" ("+history[(histPointer-1) % HIST_SIZE]+")");
+            if (DEBUG) System.out.println("->"+stroke+" ("+history[(histPointer+HIST_SIZE-1) % HIST_SIZE]+")");
             histBits = (glue)?"1":"0";
             histBits += (joinEnd)?"1":"0";
             history[histPointer] = histBits+stroke;
@@ -401,10 +394,11 @@ public class StenoTray extends JFrame {
             add(stroke);
         }
         public void delete(String stroke) {
-            histPointer = (histPointer -1) % HIST_SIZE;
+            histPointer = (histPointer+HIST_SIZE -1) % HIST_SIZE;
             stroke = history[histPointer].substring(2);
             glue = (history[histPointer].charAt(0) == '1');
             joinEnd = (history[histPointer].charAt(1) == '1');
+            if (DEBUG) System.out.println("->"+stroke+" ("+history[(histPointer+HIST_SIZE-1) % HIST_SIZE]+")");
         }
         private String processAttributes(String s) {
             if (s == null || s.length() == 0) return null;
