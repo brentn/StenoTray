@@ -226,7 +226,7 @@ public class StenoTray extends JFrame {
                 prevStroke = prevStroke.substring(0,prevStroke.length()-1);
             }
             translation.add(undoStroke,stroke,prevStroke);
-            return stroke;
+            return translation.phrase();
         }
     }
     
@@ -372,7 +372,7 @@ public class StenoTray extends JFrame {
         public String phrase() { return phrase; }
         public void add(String stroke) {
             String histBits;
-            if (stroke == null || stroke.equals("None")) {
+            if (stroke == null || stroke.length() == 0 || stroke.equals("None")) {
                 phrase = null;
                 glue = false;
                 joinEnd = false;
@@ -390,8 +390,8 @@ public class StenoTray extends JFrame {
             if (DEBUG) System.out.println("->"+stroke+" ("+history[(histPointer+HIST_SIZE-1) % HIST_SIZE]+")");
         }
         public void add(String undo, String stroke, String prev) {
-            delete(undo);
-            add(stroke);
+            if (undo != null && undo.length() > 0) delete(undo);
+            if (stroke != null && stroke.length() > 0) add(stroke);
         }
         public void delete(String stroke) {
             histPointer = (histPointer+HIST_SIZE - 2) % HIST_SIZE;
@@ -402,6 +402,8 @@ public class StenoTray extends JFrame {
             if (DEBUG) System.out.println("<-"+stroke+" ("+history[(histPointer) % HIST_SIZE]+")");
         }
         private String processAttributes(String s) {
+            glue = false;
+            joinEnd = false;
             if (s == null || s.length() == 0) return null;
             if ((s.charAt(0) != '{') || (s.charAt(s.length()-1) != '}')) return s;
             int trimStart = 1;
@@ -423,7 +425,7 @@ public class StenoTray extends JFrame {
         }
         private boolean joinEnd(String s) {
             if (s == null || s.length()<2) return false;
-            return (s.charAt(s.length()-1) == '^');
+            return (s.charAt(s.length()-2) == '^');
         }
     }
 }

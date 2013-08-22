@@ -383,22 +383,23 @@ public class StenoTray extends JFrame {
                     phrase = processAttributes(stroke);
                 }
             }
-            if (DEBUG) System.out.println("->"+stroke+" ("+history[(histPointer+HIST_SIZE-1) % HIST_SIZE]+")");
             histBits = (glue)?"1":"0";
             histBits += (joinEnd)?"1":"0";
-            history[histPointer] = histBits+stroke;
-            histPointer = (histPointer+1) % HIST_SIZE;
+            history[histPointer] = histBits+phrase;
+            histPointer = (histPointer + 1) % HIST_SIZE;
+            if (DEBUG) System.out.println("->"+stroke+" ("+history[(histPointer+HIST_SIZE-1) % HIST_SIZE]+")");
         }
         public void add(String undo, String stroke, String prev) {
             delete(undo);
             add(stroke);
         }
         public void delete(String stroke) {
-            histPointer = (histPointer+HIST_SIZE -1) % HIST_SIZE;
-            stroke = history[histPointer].substring(2);
+            histPointer = (histPointer+HIST_SIZE - 2) % HIST_SIZE;
             glue = (history[histPointer].charAt(0) == '1');
             joinEnd = (history[histPointer].charAt(1) == '1');
-            if (DEBUG) System.out.println("->"+stroke+" ("+history[(histPointer+HIST_SIZE-1) % HIST_SIZE]+")");
+            phrase = history[histPointer].substring(2);
+            histPointer = (histPointer + 1) % HIST_SIZE;
+            if (DEBUG) System.out.println("<-"+stroke+" ("+history[(histPointer) % HIST_SIZE]+")");
         }
         private String processAttributes(String s) {
             if (s == null || s.length() == 0) return null;
