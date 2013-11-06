@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.Vector;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
+import java.util.ArrayList;
 
 public class StenoTray extends JFrame {
     static String mkPath(String path1, String... paths)
@@ -51,7 +53,7 @@ public class StenoTray extends JFrame {
     private static boolean DEBUG = false;
 
     // global variables
-    private static String dictionaryFile = mkPath(PLOVER_DIR, "dict.json");
+    private static List<String> dictionaryFiles = new ArrayList<String>();
     private static String logFile = mkPath(PLOVER_DIR, "plover.log");
     private static Dictionary dictionary; // the main dictionary
     private int limit = 0; // limit the number of responses
@@ -226,7 +228,7 @@ public class StenoTray extends JFrame {
                 prevStroke = prevStroke.substring(0,prevStroke.length()-1);
             }
             translation.add(undoStroke,stroke,prevStroke);
-            return stroke;
+            return translation.phrase();
         }
     }
     
@@ -293,9 +295,9 @@ public class StenoTray extends JFrame {
     
     private void loadDictionary() throws java.io.FileNotFoundException {
         readConfig();
-        if (DEBUG) System.out.println("Loading dictionary ("+dictionaryFile+")...");
-        dictionary = new Dictionary(dictionaryFile);
-        if (DEBUG) System.out.println("Dictionary loaded");
+        if (DEBUG) System.out.println("Loading "+Integer.toString(dictionaryFiles.size())+" dictionaries...");
+        dictionary = new Dictionary(dictionaryFiles);
+        if (DEBUG) System.out.println("Dictionaries loaded");
     }
     
     private void readConfig() throws java.io.FileNotFoundException {
@@ -333,11 +335,12 @@ public class StenoTray extends JFrame {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {
                 BufferedReader pConfig = new BufferedReader(new FileReader(ploverConfig));
-                while (((line = pConfig.readLine()) != null) && (dictionaryFile == null)) {
+                while (((line = pConfig.readLine()) != null)) {
                     fields = line.split("=");
                     if (fields.length >= 2) {
-                        if (fields[0].trim().equals("dictionary_file"))
-                            dictionaryFile = fields[1].trim();
+                        if (fields[0].trim().length() > 15)
+			    if (fields[0].trim().substring(0,15).equals("dictionary_file"))
+                            	dictionaryFiles.add(fields[1].trim());
                         if (fields[0].trim().equals("log_file"))
                             logFile = fields[1].trim();
                     }
@@ -346,8 +349,8 @@ public class StenoTray extends JFrame {
             } catch (IOException e) {
                 System.err.println("Error reading Plover configuration file");
             }
-            if (dictionaryFile == null)
-                throw new java.lang.IllegalArgumentException("Unable to locate Plover dictionary file");
+            if (dictionaryFiles == null)
+                throw new java.lang.IllegalArgumentException("Unable to locate Plover dictionary file(s)");
             if (logFile == null)
                 throw new java.lang.IllegalArgumentException("Unable to locate Plover Log file");
         } else {
@@ -372,7 +375,7 @@ public class StenoTray extends JFrame {
         public String phrase() { return phrase; }
         public void add(String stroke) {
             String histBits;
-            if (stroke == null || stroke.equals("None")) {
+            if (stroke == null || stroke.length() == 0 || stroke.equals("None")) {
                 phrase = null;
                 glue = false;
                 joinEnd = false;
@@ -390,8 +393,8 @@ public class StenoTray extends JFrame {
             if (DEBUG) System.out.println("->"+stroke+" ("+history[(histPointer+HIST_SIZE-1) % HIST_SIZE]+")");
         }
         public void add(String undo, String stroke, String prev) {
-            delete(undo);
-            add(stroke);
+            if (undo != null && undo.length() > 0) delete(undo);
+            if (stroke != null && stroke.length() > 0) add(stroke);
         }
         public void delete(String stroke) {
             histPointer = (histPointer+HIST_SIZE - 2) % HIST_SIZE;
@@ -402,6 +405,8 @@ public class StenoTray extends JFrame {
             if (DEBUG) System.out.println("<-"+stroke+" ("+history[(histPointer) % HIST_SIZE]+")");
         }
         private String processAttributes(String s) {
+            glue = false;
+            joinEnd = false;
             if (s == null || s.length() == 0) return null;
             if ((s.charAt(0) != '{') || (s.charAt(s.length()-1) != '}')) return s;
             int trimStart = 1;
@@ -423,7 +428,7 @@ public class StenoTray extends JFrame {
         }
         private boolean joinEnd(String s) {
             if (s == null || s.length()<2) return false;
-            return (s.charAt(s.length()-1) == '^');
+            return (s.charAt(s.length()-2) == '^');
         }
     }
 }

@@ -13,7 +13,13 @@ public class Dictionary {
 
     // Constructor
     // Builds lookup and reverse-lookup symbol tables from .json dictionary file
-    public Dictionary(String filename) {
+    public Dictionary(List<String> dictionaryFiles) {
+	for (String filename : dictionaryFiles) {
+	    loadDictionary(filename);
+	}
+    }
+
+    public void loadDictionary(String filename) {
         if (filename == null || filename.equals("")) {
             throw new java.lang.IllegalArgumentException();
         }
@@ -309,15 +315,17 @@ public class Dictionary {
     
     
     public static void main(String[] args) {
-        Dictionary dictionary = new Dictionary("/home/brent/Dropbox/Plover/gbDict2.json");
-        StdOut.println(dictionary.lookup("Unicyclist"));
-        StdOut.println(dictionary.buildUp("interloping"));
-        StdOut.println(dictionary.lookup("interloping is what it's all about"));
-        StdOut.println(dictionary.translate("SPWR/HR*/O*/P*/-G/S/WHA/T-S/AUL/P/"));
+	List<String> d = new ArrayList<String>();
+	d.add("/home/brentn/Dropbox/Plover/gbDict2.json");
+        Dictionary dictionary = new Dictionary(d);
+        System.out.println(dictionary.lookup("Unicyclist"));
+        System.out.println(dictionary.buildUp("interloping"));
+        System.out.println(dictionary.lookup("interloping is what it's all about"));
+        System.out.println(dictionary.translate("SPWR/HR*/O*/P*/-G/S/WHA/T-S/AUL/P/"));
         for (Pair p : dictionary.autoLookup("unic","HREUL")) {
-            StdOut.println(p.translation()+ " --> "+p.stroke());
+            System.out.println(p.translation()+ " --> "+p.stroke());
         };
-        //StdOut.println(dictionary.shorter("HRAEUD/EUS/STK/SKWRE/PHEPB/-F/-T/SKWRUR"));
+        //System.out.println(dictionary.shorter("HRAEUD/EUS/STK/SKWRE/PHEPB/-F/-T/SKWRUR"));
     }
 }
 

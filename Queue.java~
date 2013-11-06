@@ -168,7 +168,7 @@ public class Queue<Item> implements Iterable<Item> {
 
    /**
      * A test client.
- 
+     */
     public static void main(String[] args) {
         Queue<String> q = new Queue<String>();
         while (!System.in.isEmpty()) {
@@ -177,6 +177,6 @@ public class Queue<Item> implements Iterable<Item> {
             else if (!q.isEmpty()) System.out.print(q.dequeue() + " ");
         }
         System.out.println("(" + q.size() + " left on queue)");
-    }*/
+    }
 }
 

@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.Vector;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
+import java.util.ArrayList;
 
 public class StenoTray extends JFrame {
     static String mkPath(String path1, String... paths)
@@ -51,7 +53,7 @@ public class StenoTray extends JFrame {
     private static boolean DEBUG = false;
 
     // global variables
-    private static String dictionaryFile = mkPath(PLOVER_DIR, "dict.json");
+    private static List<String> dictionaryFiles = new ArrayList<String>();
     private static String logFile = mkPath(PLOVER_DIR, "plover.log");
     private static Dictionary dictionary; // the main dictionary
     private int limit = 0; // limit the number of responses
@@ -191,7 +193,7 @@ public class StenoTray extends JFrame {
         if (line.indexOf("Translation") == -1) return "";
         String stroke, prevStroke, undoStroke;
         String[] parts;
-        if (line.indexOf("Translation((") == -1) { // old style log
+        if (line.indexOf("Translation((") == -1 || true) { // old style log
             if (line.indexOf("*Translation") >= 0) { // delete stroke
                 line = line.substring(line.indexOf("Translation")+12,line.length()-1);
                 stroke = line.split(":")[1].trim();
@@ -293,9 +295,9 @@ public class StenoTray extends JFrame {
     
     private void loadDictionary() throws java.io.FileNotFoundException {
         readConfig();
-        if (DEBUG) System.out.println("Loading dictionary ("+dictionaryFile+")...");
-        dictionary = new Dictionary(dictionaryFile);
-        if (DEBUG) System.out.println("Dictionary loaded");
+        if (DEBUG) System.out.println("Loading "+Integer.toString(dictionaryFiles.size())+" dictionaries...");
+        dictionary = new Dictionary(dictionaryFiles);
+        if (DEBUG) System.out.println("Dictionaries loaded");
     }
     
     private void readConfig() throws java.io.FileNotFoundException {
@@ -333,11 +335,12 @@ public class StenoTray extends JFrame {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {
                 BufferedReader pConfig = new BufferedReader(new FileReader(ploverConfig));
-                while (((line = pConfig.readLine()) != null) && (dictionaryFile == null)) {
+                while (((line = pConfig.readLine()) != null)) {
                     fields = line.split("=");
                     if (fields.length >= 2) {
-                        if (fields[0].trim().equals("dictionary_file"))
-                            dictionaryFile = fields[1].trim();
+                        if (fields[0].trim().length() > 15)
+			    if (fields[0].trim().substring(0,15).equals("dictionary_file"))
+                            	dictionaryFiles.add(fields[1].trim());
                         if (fields[0].trim().equals("log_file"))
                             logFile = fields[1].trim();
                     }
@@ -346,8 +349,8 @@ public class StenoTray extends JFrame {
             } catch (IOException e) {
                 System.err.println("Error reading Plover configuration file");
             }
-            if (dictionaryFile == null)
-                throw new java.lang.IllegalArgumentException("Unable to locate Plover dictionary file");
+            if (dictionaryFiles == null)
+                throw new java.lang.IllegalArgumentException("Unable to locate Plover dictionary file(s)");
             if (logFile == null)
                 throw new java.lang.IllegalArgumentException("Unable to locate Plover Log file");
         } else {
