@@ -191,20 +191,30 @@ public class StenoTray extends JFrame {
     
     private String parseLogLine(String line, Translation translation) {
         if (line.indexOf("Translation") == -1) return "";
-        String stroke, prevStroke, undoStroke;
+        String stroke = "", prevStroke, undoStroke;
         String[] parts;
         if (line.indexOf("Translation((") == -1 || true) { // old style log
             if (line.indexOf("*Translation") >= 0) { // delete stroke
                 line = line.substring(line.indexOf("Translation")+12,line.length()-1);
-                stroke = line.split(":")[1].trim();
-                translation.delete(stroke);
+                translation.delete(line.split(":",2)[1].trim());
+                String rawstroke = line.split(":",2)[0].trim();
+                rawstroke = rawstroke.substring(1,rawstroke.length()-1);
+                for(String str : rawstroke.split(",")) {
+                    str = str.trim()
+                    stroke += str.substring(1,str.length()-1)+"/";
+                }
                 return stroke;
             } else { 
                 line = line.substring(line.indexOf("Translation")+12,line.length()-1);
-                stroke = line.split(":")[1].trim();
-                translation.add(stroke);
-                if (DEBUG) System.out.println("stroke:"+line.split(":")[0].trim());
-                return line.split(":")[0].trim();
+                translation.add(   line.split(":",2)[1].trim());
+                String rawstroke = line.split(":",2)[0].trim();
+                rawstroke = rawstroke.substring(1,rawstroke.length()-1);
+                for(String str : rawstroke.split(",")) {
+                    str = str.trim()
+                    stroke += str.substring(1,str.length()-1)+"/";
+                }
+                if (DEBUG) System.out.println("stroke:"+stroke);
+                return stroke;
             }
         } else { // new log style 
             line = line.substring(line.indexOf("(")+1);
