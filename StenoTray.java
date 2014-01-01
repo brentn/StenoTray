@@ -198,24 +198,23 @@ public class StenoTray extends JFrame {
                 line = line.substring(line.indexOf("Translation")+12,line.length()-1);
                 translation.delete(line.split(":",2)[1].trim());
                 String rawstroke = line.split(":",2)[0].trim();
-				rawstroke = rawstroke.substring(1,rawstroke.length()-1);
-				for(String str : rawstroke.split(",")) {
-				    stroke += str.trim().substring(1,str.length()-1)+"/";
-			    }
+                rawstroke = rawstroke.substring(1,rawstroke.length()-1);
+                for(String str : rawstroke.split(",")) {
+                    stroke += str.trim().substring(1,str.length()-1)+"/";
+                }
                 return stroke;
             } else { 
                 line = line.substring(line.indexOf("Translation")+12,line.length()-1);
                 translation.add(   line.split(":",2)[1].trim());
                 String rawstroke = line.split(":",2)[0].trim();
-				rawstroke = rawstroke.substring(1,rawstroke.length()-1);
-				for(String str : rawstroke.split(",")) {
-				    stroke += str.trim().substring(1,str.length()-1)+"/";
-			    }
+                rawstroke = rawstroke.substring(1,rawstroke.length()-1);
+                for(String str : rawstroke.split(",")) {
+                    stroke += str.trim().substring(1,str.length()-1)+"/";
+                }
                 if (DEBUG) System.out.println("stroke:"+stroke);
                 return stroke;
             }
         } else { // new log style 
-
             line = line.substring(line.indexOf("(")+1);
             parts = line.split("],");
             if (parts[0].indexOf(":") == -1) {
