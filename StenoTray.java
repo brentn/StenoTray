@@ -200,7 +200,7 @@ public class StenoTray extends JFrame {
                 String rawstroke = line.split(":",2)[0].trim();
                 rawstroke = rawstroke.substring(1,rawstroke.length()-1);
                 for(String str : rawstroke.split(",")) {
-                    str = str.trim()
+                    str = str.trim();
                     stroke += str.substring(1,str.length()-1)+"/";
                 }
                 return stroke;
@@ -210,7 +210,7 @@ public class StenoTray extends JFrame {
                 String rawstroke = line.split(":",2)[0].trim();
                 rawstroke = rawstroke.substring(1,rawstroke.length()-1);
                 for(String str : rawstroke.split(",")) {
-                    str = str.trim()
+                    str = str.trim();
                     stroke += str.substring(1,str.length()-1)+"/";
                 }
                 if (DEBUG) System.out.println("stroke:"+stroke);
