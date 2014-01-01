@@ -5,18 +5,22 @@ import java.util.List;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.TreeMap;
+import java.util.NavigableMap;
+import java.util.Map;
+import java.util.Collection;
+
 
 public class Dictionary {
-    
-    private TST<StrokeSet> english = new TST<StrokeSet>();
-    private TST<String> definitions = new TST<String>();
+    private MultiTreeMap<String> english = new MultiTreeMap<String>();                 // One translation can have multiple strokes, and keys are case insensitive.
+    private NavigableMap<String, String> definitions = new TreeMap<String, String>();  // But one stroke can have only one translation
 
     // Constructor
     // Builds lookup and reverse-lookup symbol tables from .json dictionary file
     public Dictionary(List<String> dictionaryFiles) {
-	for (String filename : dictionaryFiles) {
-	    loadDictionary(filename);
-	}
+        for (String filename : dictionaryFiles) {
+            loadDictionary(filename);
+        }
     }
 
     public void loadDictionary(String filename) {
@@ -25,23 +29,17 @@ public class Dictionary {
         }
         String stroke;
         String translation;
-        StrokeSet strokeSet;
         String line = "";
         String[] fields;
         try {
             BufferedReader file = new BufferedReader(new FileReader(filename)); 
         while ((line = readLine(file)) != null) {
-            fields = line.split("\"");
+            fields = line.split("\""); // TODO: This is buggy if text contains a quote. Should parse actual JSON.
             if ((fields.length) >= 3 && (fields[3].length() > 0)) {
                 stroke = fields[1];
                 translation = fields[3];
-                strokeSet = english.get(translation);
-                if (strokeSet == null) 
-                    strokeSet = new StrokeSet(stroke);
-                else
-                    strokeSet.add(stroke);
-                english.put(translation, strokeSet);
-                definitions.put(stroke, translation);
+                english.putSingle(translation, stroke);  // This is the MultiTreeMap, so any duplicate keys get added to the list. This is technically buggy if you use multiple dictionaries and some entries are overwritten. TODO
+                definitions.put(stroke, translation);    // This is the normal TreeMap, so any duplicate keys get overwritten by the last key.
             }
         }
         file.close();
@@ -52,16 +50,17 @@ public class Dictionary {
     
     // A class to allow managing stroke/translation pairs
     public class Pair {
-        private StrokeSet strokes;
+        private String s;
         private String translation;
-        public Pair(StrokeSet s, String t) {
-            strokes = s;
+        public Pair(String st, String t) {
+            s = st;
             translation = t;
         }
         public String translation() { return translation; }
-        public String stroke() { return strokes.shortest(); }
+        public String stroke() { return s; }
     }
-    
+ 
+ /*   
     // spell out a word letter-by-letter
     public String fingerspell(String word) {
         if (word.length() == 0) 
@@ -153,22 +152,21 @@ public class Dictionary {
 //        Collections.sort(result,new ByPhraseLength());
 //        return result;
 //    }
-
+*/
     public Iterable<Pair> autoLookup(String stringPrefix, String strokePrefix) {
         List<Pair> result = new ArrayList<Pair>();
-        if (stringPrefix.length() > 2) { // don't do lookup for short prefixes
-            for (String phrase : english.prefixMatch(stringPrefix)) {
-                result.add(new Pair(english.get(phrase),phrase));
+        if (stringPrefix.length() > 1) { // don't do lookup for short prefixes
+            for (Collection<Tuple<String, String>> pairs : prefixMatch(english, stringPrefix).values()) {
+                for (Tuple<String, String> pair : pairs) {
+                    result.add(new Pair(pair.y,pair.x));
+                }
             }
         }
-        if (strokePrefix.length() >= 2) {
+        if (strokePrefix.length() >= 1) {
             if (strokePrefix.charAt(strokePrefix.length()-1) != '/')
                 strokePrefix += "/"; // ensure the stroke is complete
-            int slashCount = countSlashes(strokePrefix); // only lookup definitions with 1 more stroke than what we have already
-            for (String stroke : definitions.prefixMatch(strokePrefix)) {
-                if (countSlashes(stroke) == slashCount) {
-                    result.add(new Pair(new StrokeSet(stroke), definitions.get(stroke)));
-                }
+            for (Map.Entry<String, String> pair : prefixMatch(definitions, strokePrefix).entrySet()) {
+                result.add(new Pair(pair.getKey(), pair.getValue()));
             }
         }
         Collections.sort(result,new ByPhraseLength());
@@ -178,23 +176,10 @@ public class Dictionary {
         
     // PRIVATE CLASSES AND METHODS
     
-    private class StrokeSet {
-        private List<String> strokes;      
-        public StrokeSet(String stroke) {
-            strokes = new ArrayList<String>();
-            add(stroke);
-        }
-        public void add(String stroke) { strokes.add(stroke); }
-        public String shortest() {
-            String result = null;
-            for (String stroke : strokes) {
-                if ((result == null) || (strokeLength(stroke) < strokeLength(result)))
-                    result = stroke;
-            }
-            return result;
-        }
+    private <T2> NavigableMap<String, T2> prefixMatch(NavigableMap<String, T2> m, String prefix) {
+        return m.subMap(prefix, true, prefix+"\uffff", true);
     }
-    
+	
     private static class ByPhraseLength implements Comparator<Pair> {
         public int compare(Pair p1, Pair p2) {
             if ((p1 == null) || (p2 == null)) 
@@ -202,6 +187,10 @@ public class Dictionary {
             if (p1.equals(p2)) return 0;
             int length1 = phraseLength(p1.translation());
             int length2 = phraseLength(p2.translation());
+            if (length1 == length2) {
+                length1 = strokeLength(p1.stroke());
+                length2 = strokeLength(p2.stroke());
+            }
             return (length1 - length2);
         }
     }
@@ -213,6 +202,10 @@ public class Dictionary {
             if (p1.equals(p2)) return 0;
             int length1 = strokeLength(p1.stroke());
             int length2 = strokeLength(p2.stroke());
+            if (length1 == length2) {
+                length1 = phraseLength(p1.translation());
+                length2 = phraseLength(p2.translation());
+            }
             return (length1 - length2);
         }   
     }
@@ -236,7 +229,7 @@ public class Dictionary {
         }
         return result;
     }
-    
+/*    
     // use fingerspelling, prefixes and suffixes to build an efficient way to
     // stroke words not found in the dictionary
     private String buildUp(String word) {
@@ -304,7 +297,7 @@ public class Dictionary {
     private static Boolean isMacro(String word) {
         return ((word.charAt(0) == '{') && (word.charAt(word.length()-1) == '}'));
     }
-    
+*/    
     private static int strokeLength(String stroke) {
         return stroke.split("/").length * 100 + stroke.length();
     }
@@ -313,15 +306,15 @@ public class Dictionary {
         return word.split(" ").length * 10 + word.length();
     }
     
-    
+   
     public static void main(String[] args) {
 	List<String> d = new ArrayList<String>();
 	d.add("/home/brentn/Dropbox/Plover/gbDict2.json");
         Dictionary dictionary = new Dictionary(d);
-        System.out.println(dictionary.lookup("Unicyclist"));
-        System.out.println(dictionary.buildUp("interloping"));
-        System.out.println(dictionary.lookup("interloping is what it's all about"));
-        System.out.println(dictionary.translate("SPWR/HR*/O*/P*/-G/S/WHA/T-S/AUL/P/"));
+//        System.out.println(dictionary.lookup("Unicyclist"));
+//        System.out.println(dictionary.buildUp("interloping"));
+//        System.out.println(dictionary.lookup("interloping is what it's all about"));
+//        System.out.println(dictionary.translate("SPWR/HR*/O*/P*/-G/S/WHA/T-S/AUL/P/"));
         for (Pair p : dictionary.autoLookup("unic","HREUL")) {
             System.out.println(p.translation()+ " --> "+p.stroke());
         };
