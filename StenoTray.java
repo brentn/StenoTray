@@ -159,6 +159,7 @@ public class StenoTray extends JFrame {
             line.add(strokeLabel);
             list.add(line, BorderLayout.NORTH);
         }
+        this.setTitle(phrase+"  "+stroke);
         this.add(scrollPane);
         this.validate();
         this.pack();
@@ -175,10 +176,10 @@ public class StenoTray extends JFrame {
         for (line = input.readLine(); line != null; line = input.readLine()) {};  // position at the end of the file
         while (true) {
             if ((line = input.readLine()) != null) {
-                if (input.ready())
-                    continue;
                 stenoStroke = parseLogLine(line, translation);
                 String phrase = translation.phrase();
+                if (input.ready())
+                    continue;
                 updateGUI(phrase, stenoStroke);
                 continue;
             }
