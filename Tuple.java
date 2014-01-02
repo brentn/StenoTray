@@ -1,9 +1,3 @@
-import java.util.TreeMap;
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.Collection;
-import java.util.ArrayList;
-
 public class Tuple<X, Y> { 
     public X x; 
     public Y y; 

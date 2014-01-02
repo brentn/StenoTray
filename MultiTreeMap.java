@@ -12,7 +12,8 @@ public class MultiTreeMap<V> extends TreeMap<String, Collection<Tuple<String, V>
             super.put(s.toLowerCase(), val);
             return old;
         }
-        public Collection<Tuple<String, V>> get(String s) {
+        
+    public Collection<Tuple<String, V>> get(String s) {
         return super.get(s.toLowerCase());
     }
 

@@ -11,7 +11,6 @@ import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.BoxLayout;
-import javax.swing.Box;
 import java.io.File;
 import java.io.Reader;
 import java.io.FileReader;
@@ -161,7 +160,6 @@ public class StenoTray extends JFrame {
             line.add(translationLabel);
             line.add(strokeLabel);
             list.add(line, BorderLayout.NORTH);
-            list.add(Box.createRigidArea(new Dimension(-1, 0)));
             if (count++ == limit)
                 break;
         }
