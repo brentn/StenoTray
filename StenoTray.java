@@ -33,7 +33,6 @@ public class StenoTray extends JFrame {
         return sb.toString();
     };
 
-
     // find the default location of the plover config directory
     private static final String PSEP       = System.getProperty("file.separator");
     private static final String UHOME      = System.getProperty("user.home");
@@ -67,7 +66,7 @@ public class StenoTray extends JFrame {
         screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        final int prefSizeX = 400;
+        final int prefSizeX = 300;
         final int prefSizeY = 650;
         final int taskBarSize = 56;
 
@@ -90,54 +89,93 @@ public class StenoTray extends JFrame {
 
     String colorSteno(String text)
     {
-        // 0 : left hand side, 1 : lhs vowel, 2 : rhs vowel, 3: right hand side
-        int prevPart = 0;
-        StringBuilder sb = new StringBuilder("<html><font color=\"red\">");
-
-        String lhsVowels = "AO";
-        String rhsVowels = "EUI";
-
-        String bgColors[] = { "",                "bgcolor=\"red\"", "bgcolor=\"blue\"",  "",               "" };
-        String fgColors[] = { "color=\"red\"",   "color=\"white\"",  "color=\"white\"",  "color=\"blue\"", "" };
-
-        for (char c : text.toCharArray())
-        {
-            int currPart = prevPart;
-            boolean shouldColor = true;
-
-            if (c == '/') {
-                currPart = 0;
-                shouldColor = false;
-            } else if (c == '*') {
-//                currPart = 2;
-                shouldColor = false;
-            } else if (c == '-') {
-                currPart = 3;
-                shouldColor = false;
-            } else if (lhsVowels.indexOf(c) != -1) {
-                currPart = 1;
-            } else if (rhsVowels.indexOf(c) != -1) {
-                currPart = 2;
-            } else if ((currPart == 1 || currPart == 2) && lhsVowels.indexOf(c) == -1 && rhsVowels.indexOf(c) == -1) {
-                currPart = 3;
+        // Let's make this a neat little state machine. Now if only it were fast...
+        StringBuilder sb = new StringBuilder("<html>");
+        int state = 0;
+        String s1 = "STPHKWR1234";
+        String s2 = "AO5";
+        String s3 = "*-0";
+        String s4 = "EU";
+        String s5 = "FPLTDRBGSZ6789";
+        String ss = "/";
+        for (char c : text.toCharArray()) {
+            switch (state) {
+                case 0 : if (s1.indexOf(c) != -1) {
+                             state = 1;
+                             sb.append(" <font color=\"red\">");
+                         } else if (s2.indexOf(c) != -1) {
+                             state = 2;
+                             sb.append(" <font color=\"white\" bgcolor=\"red\">");
+                         } else if (s3.indexOf(c) != -1){
+                             sb.append(" ");
+                             state = 3;
+                         } else if (s4.indexOf(c) != -1) {
+                             state = 4;
+                             sb.append(" <font color=\"white\" bgcolor=\"blue\">");
+                         } else {
+                             throw new IllegalArgumentException("Stroke with impossible values");
+                         }
+                         break;
+                case 1 : if (s2.indexOf(c) != -1) {
+                             state = 2;
+                             sb.append("</font><font color=\"white\" bgcolor=\"red\">");
+                         } else if (s3.indexOf(c) != -1) {
+                             state = 3;
+                             sb.append("</font>");
+                         } else if (s4.indexOf(c) != -1) {
+                             state = 4;
+                             sb.append("</font><font color=\"white\" bgcolor=\"blue\">");
+                         } else if (ss.indexOf(c) != -1) {
+                             state = 0;
+                             sb.append("</font> ");
+                         }
+                         break;
+                case 2 : if (s3.indexOf(c) != -1) {
+                             state = 3;
+                             sb.append("</font>");
+                         } else if (s4.indexOf(c) != -1) {
+                             state = 4;
+                             sb.append("</font><font color=\"white\" bgcolor=\"blue\">");
+                         } else if (s5.indexOf(c) != -1) {
+                             state = 5;
+                             sb.append("</font><font color=\"blue\">");
+                         } else if (ss.indexOf(c) != -1) {
+                             state = 0;
+                             sb.append("</font> ");
+                         }
+                         break;
+                case 3 : if (s4.indexOf(c) != -1) {
+                             state = 4;
+                             sb.append("<font color=\"white\" bgcolor=\"blue\">");
+                         } else if (s5.indexOf(c) != -1) {
+                             state = 5;
+                             sb.append("<font color=\"blue\">");
+                         } else if (ss.indexOf(c) != -1) {
+                             state = 0;
+                             sb.append(" ");
+                         }
+                         break;
+                case 4 : if (s5.indexOf(c) != -1) {
+                             state = 5;
+                             sb.append("</font><font color=\"blue\">");
+                         } else if (ss.indexOf(c) != -1) {
+                             state = 0;
+                             sb.append("</font> ");
+                         }
+                         break;
+                case 5 : if (ss.indexOf(c) != -1) {
+                             state = 0;
+                             sb.append("</font> ");
+                         }
+                         break;
+                default: throw new IllegalArgumentException("State machine in impossible state");
             }
-
-            if (currPart == prevPart ) {
-                sb.append(c);
-                continue;
-            }
-
-            if (shouldColor) {
-                sb.append(String.format("</font><font %s %s>%c", fgColors[currPart], bgColors[currPart], c));
-            } else {
-                sb.append(String.format("</font>%c<font %s %s>", c, fgColors[currPart], bgColors[currPart]));
-            }
-
-            prevPart = currPart;
+            sb.append(c);
         }
-
-        sb.append("</font></html>");
-        return sb.toString();
+        if (state == 2 || state == 4 || state == 5)
+            sb.append("</font>");
+        sb.append("</html>");       
+        return sb.toString(); 
     }
 
     private void updateGUI(String phrase, String stroke) {
@@ -352,7 +390,7 @@ public class StenoTray extends JFrame {
             }
         }
         font = new Font("Sans", Font.BOLD, fontSize);
-        strokeFont = new Font("Sans", Font.PLAIN, (fontSize));
+        strokeFont = new Font("Sans", Font.BOLD, (fontSize));
         if (new File(ploverConfig).isFile()) {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {
