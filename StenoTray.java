@@ -67,7 +67,7 @@ public class StenoTray extends JFrame {
         screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        final int prefSizeX = 200;
+        final int prefSizeX = 400;
         final int prefSizeY = 650;
         final int taskBarSize = 56;
 
@@ -148,15 +148,20 @@ public class StenoTray extends JFrame {
         JPanel list = new JPanel();
         list.setLayout(new BoxLayout(list, BoxLayout.PAGE_AXIS));
         mainPanel.add(list, BorderLayout.NORTH);
+        int count = 1;
         for (Dictionary.Pair pair : dictionary.autoLookup(phrase, stroke)) {
             JPanel line = new JPanel();
-            line.setLayout(new FlowLayout(FlowLayout.LEFT));
+            line.setLayout(new FlowLayout(FlowLayout.LEFT,5,0));
             JLabel translationLabel = new JLabel(pair.translation());        
             JLabel strokeLabel = new JLabel(colorSteno(simplify(pair.stroke())));
+            //JLabel strokeLabel = new JLabel(simplify(pair.stroke()));
+            translationLabel.setFont(font);
             strokeLabel.setFont(strokeFont);
             line.add(translationLabel);
             line.add(strokeLabel);
             list.add(line, BorderLayout.NORTH);
+            if (count++ == limit)
+                break;
         }
         this.setTitle(phrase+"  "+stroke);
         this.add(scrollPane);
@@ -203,8 +208,10 @@ public class StenoTray extends JFrame {
                 String rawstroke = line.split(":",2)[0].trim();
                 rawstroke = rawstroke.substring(1,rawstroke.length()-1);
                 for(String str : rawstroke.split(",")) {
+                    if (stroke != "")
+                        stroke += "/";
                     str = str.trim();
-                    stroke += str.substring(1,str.length()-1)+"/";
+                    stroke += str.substring(1,str.length()-1);
                 }
                 return stroke;
             } else { 
@@ -213,8 +220,10 @@ public class StenoTray extends JFrame {
                 String rawstroke = line.split(":",2)[0].trim();
                 rawstroke = rawstroke.substring(1,rawstroke.length()-1);
                 for(String str : rawstroke.split(",")) {
+                    if (stroke != "")
+                        stroke += "/";
                     str = str.trim();
-                    stroke += str.substring(1,str.length()-1)+"/";
+                    stroke += str.substring(1,str.length()-1);
                 }
                 if (DEBUG) System.out.println("stroke:"+stroke);
                 return stroke;
@@ -342,8 +351,8 @@ public class StenoTray extends JFrame {
                 System.err.println("Error reading config file: "+CONFIG_DIR);
             }
         }
-        font = new Font("Sans", Font.PLAIN, fontSize);
-        strokeFont = new Font("Consolas", Font.PLAIN, (fontSize+4));
+        font = new Font("Sans", Font.BOLD, fontSize);
+        strokeFont = new Font("Sans", Font.PLAIN, (fontSize));
         if (new File(ploverConfig).isFile()) {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {
@@ -352,8 +361,8 @@ public class StenoTray extends JFrame {
                     fields = line.split("=");
                     if (fields.length >= 2) {
                         if (fields[0].trim().length() > 15)
-			    if (fields[0].trim().substring(0,15).equals("dictionary_file"))
-                            	dictionaryFiles.add(fields[1].trim());
+                        if (fields[0].trim().substring(0,15).equals("dictionary_file"))
+                            dictionaryFiles.add(fields[1].trim());
                         if (fields[0].trim().equals("log_file"))
                             logFile = fields[1].trim();
                     }
