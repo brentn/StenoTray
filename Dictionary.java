@@ -155,14 +155,14 @@ public class Dictionary {
 */
     public Iterable<Pair> autoLookup(String stringPrefix, String strokePrefix) {
         List<Pair> result = new ArrayList<Pair>();
-        if (stringPrefix.length() > 1) { // don't do lookup for short prefixes
+        if (stringPrefix.length() > 2) { // don't do lookup for short prefixes
             for (Collection<Tuple<String, String>> pairs : prefixMatch(english, stringPrefix).values()) {
                 for (Tuple<String, String> pair : pairs) {
                     result.add(new Pair(pair.y,pair.x));
                 }
             }
         }
-        if (strokePrefix.length() >= 1) {
+        if (strokePrefix.length() >= 2) {
             if (strokePrefix.charAt(strokePrefix.length()-1) != '/')
                 strokePrefix += "/"; // ensure the stroke is complete
             for (Map.Entry<String, String> pair : prefixMatch(definitions, strokePrefix).entrySet()) {
