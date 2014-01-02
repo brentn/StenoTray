@@ -175,7 +175,7 @@ public class StenoTray extends JFrame {
         for (line = input.readLine(); line != null; line = input.readLine()) {};  // position at the end of the file
         while (true) {
             if ((line = input.readLine()) != null) {
-                if (input.hasNextLine())
+                if (input.ready())
                     continue;
                 stenoStroke = parseLogLine(line, translation);
                 String phrase = translation.phrase();
