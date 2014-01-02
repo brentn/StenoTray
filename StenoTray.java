@@ -92,12 +92,12 @@ public class StenoTray extends JFrame {
         // Let's make this a neat little state machine. Now if only it were fast...
         StringBuilder sb = new StringBuilder("<html>");
         int state = 0;
+        String s0 = "/#";
         String s1 = "STPHKWR1234";
         String s2 = "AO5";
         String s3 = "*-0";
         String s4 = "EU";
         String s5 = "FPLTDRBGSZ6789";
-        String ss = "/";
         for (char c : text.toCharArray()) {
             switch (state) {
                 case 0 : if (s1.indexOf(c) != -1) {
@@ -112,8 +112,8 @@ public class StenoTray extends JFrame {
                          } else if (s4.indexOf(c) != -1) {
                              state = 4;
                              sb.append(" <font color=\"white\" bgcolor=\"blue\">");
-                         } else {
-                             throw new IllegalArgumentException("Stroke with impossible values");
+                         } else if (s0.indexOf(c) != -1) {
+                             sb.append(" ");
                          }
                          break;
                 case 1 : if (s2.indexOf(c) != -1) {
@@ -125,7 +125,7 @@ public class StenoTray extends JFrame {
                          } else if (s4.indexOf(c) != -1) {
                              state = 4;
                              sb.append("</font><font color=\"white\" bgcolor=\"blue\">");
-                         } else if (ss.indexOf(c) != -1) {
+                         } else if (s0.indexOf(c) != -1) {
                              state = 0;
                              sb.append("</font> ");
                          }
@@ -139,7 +139,7 @@ public class StenoTray extends JFrame {
                          } else if (s5.indexOf(c) != -1) {
                              state = 5;
                              sb.append("</font><font color=\"blue\">");
-                         } else if (ss.indexOf(c) != -1) {
+                         } else if (s0.indexOf(c) != -1) {
                              state = 0;
                              sb.append("</font> ");
                          }
@@ -150,7 +150,7 @@ public class StenoTray extends JFrame {
                          } else if (s5.indexOf(c) != -1) {
                              state = 5;
                              sb.append("<font color=\"blue\">");
-                         } else if (ss.indexOf(c) != -1) {
+                         } else if (s0.indexOf(c) != -1) {
                              state = 0;
                              sb.append(" ");
                          }
@@ -158,12 +158,12 @@ public class StenoTray extends JFrame {
                 case 4 : if (s5.indexOf(c) != -1) {
                              state = 5;
                              sb.append("</font><font color=\"blue\">");
-                         } else if (ss.indexOf(c) != -1) {
+                         } else if (s0.indexOf(c) != -1) {
                              state = 0;
                              sb.append("</font> ");
                          }
                          break;
-                case 5 : if (ss.indexOf(c) != -1) {
+                case 5 : if (s0.indexOf(c) != -1) {
                              state = 0;
                              sb.append("</font> ");
                          }
