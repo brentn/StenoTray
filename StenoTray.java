@@ -67,7 +67,7 @@ public class StenoTray extends JFrame {
         screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        final int prefSizeX = 200;
+        final int prefSizeX = 400;
         final int prefSizeY = 650;
         final int taskBarSize = 56;
 
@@ -152,7 +152,8 @@ public class StenoTray extends JFrame {
             JPanel line = new JPanel();
             line.setLayout(new FlowLayout(FlowLayout.LEFT));
             JLabel translationLabel = new JLabel(pair.translation());        
-            JLabel strokeLabel = new JLabel(colorSteno(simplify(pair.stroke())));
+            //JLabel strokeLabel = new JLabel(colorSteno(simplify(pair.stroke())));
+            JLabel strokeLabel = new JLabel(simplify(pair.stroke()));
             strokeLabel.setFont(strokeFont);
             line.add(translationLabel);
             line.add(strokeLabel);
@@ -174,6 +175,8 @@ public class StenoTray extends JFrame {
         for (line = input.readLine(); line != null; line = input.readLine()) {};  // position at the end of the file
         while (true) {
             if ((line = input.readLine()) != null) {
+                if (input.hasNextLine())
+                    continue;
                 stenoStroke = parseLogLine(line, translation);
                 String phrase = translation.phrase();
                 updateGUI(phrase, stenoStroke);
