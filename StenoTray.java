@@ -50,7 +50,7 @@ public class StenoTray extends JFrame {
     }
 
     private static final String CONFIG_DIR = mkPath(PLOVER_DIR, "stenotray.cfg");
-    private static boolean DEBUG = true;
+    private static boolean DEBUG = false;
 
     // global variables
     private static List<String> dictionaryFiles = new ArrayList<String>();
