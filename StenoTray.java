@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.BoxLayout;
+import javax.swing.Box;
 import java.io.File;
 import java.io.Reader;
 import java.io.FileReader;
@@ -148,16 +149,21 @@ public class StenoTray extends JFrame {
         JPanel list = new JPanel();
         list.setLayout(new BoxLayout(list, BoxLayout.PAGE_AXIS));
         mainPanel.add(list, BorderLayout.NORTH);
+        int count = 1;
         for (Dictionary.Pair pair : dictionary.autoLookup(phrase, stroke)) {
             JPanel line = new JPanel();
-            line.setLayout(new FlowLayout(FlowLayout.LEFT));
+            line.setLayout(new FlowLayout(FlowLayout.LEFT,5,0));
             JLabel translationLabel = new JLabel(pair.translation());        
-            //JLabel strokeLabel = new JLabel(colorSteno(simplify(pair.stroke())));
-            JLabel strokeLabel = new JLabel(simplify(pair.stroke()));
+            JLabel strokeLabel = new JLabel(colorSteno(simplify(pair.stroke())));
+            //JLabel strokeLabel = new JLabel(simplify(pair.stroke()));
+            translationLabel.setFont(font);
             strokeLabel.setFont(strokeFont);
             line.add(translationLabel);
             line.add(strokeLabel);
             list.add(line, BorderLayout.NORTH);
+            list.add(Box.createRigidArea(new Dimension(-1, 0)));
+            if (count++ == limit)
+                break;
         }
         this.setTitle(phrase+"  "+stroke);
         this.add(scrollPane);
@@ -347,8 +353,8 @@ public class StenoTray extends JFrame {
                 System.err.println("Error reading config file: "+CONFIG_DIR);
             }
         }
-        font = new Font("Sans", Font.PLAIN, fontSize);
-        strokeFont = new Font("Consolas", Font.PLAIN, (fontSize+4));
+        font = new Font("Sans", Font.BOLD, fontSize);
+        strokeFont = new Font("Sans", Font.PLAIN, (fontSize));
         if (new File(ploverConfig).isFile()) {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {
