@@ -41,8 +41,11 @@ public class StenoTray extends JFrame {
         String[] innerDirsWin = {"AppData", "Local", "plover", "plover"};
         String[] innerDirsOther = {".config", "plover"};
         String[] innerDirs;
-        if (System.getProperty("os.name").startsWith("Windows")) {
+	String osName = System.getProperty("os.name");
+        if (osName.startsWith("Windows")) {
             PLOVER_DIR = mkPath(UHOME, "AppData", "Local", "plover", "plover");
+        } else if (osName.startsWith("Mac")) {
+            PLOVER_DIR = mkPath(UHOME, "Library", "Application Support", "plover");
         } else {
             PLOVER_DIR = mkPath(UHOME, ".config", "plover");
         }
@@ -414,7 +417,7 @@ public class StenoTray extends JFrame {
             if (logFile == null)
                 throw new java.lang.IllegalArgumentException("Unable to locate Plover Log file");
         } else {
-            throw new java.io.FileNotFoundException("Cannot locate plover config file");
+            throw new java.io.FileNotFoundException("Cannot locate plover config file: " + ploverConfig.toString());
         }
     }
 
