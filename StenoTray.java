@@ -96,11 +96,11 @@ public class StenoTray extends JFrame {
         StringBuilder sb = new StringBuilder("<html>");
         int state = 0;
         String s0 = "/#";
-        String s1 = "STPHKWR1234";
+        String s1 = "STPHKWR1234JGNYDBLFMQXCV";
         String s2 = "AO5";
         String s3 = "*-0";
-        String s4 = "EU";
-        String s5 = "FPLTDRBGSZ6789";
+        String s4 = "EUI";
+        String s5 = "FPLTDRBGSZ6789JXNMK";
         for (char c : text.toCharArray()) {
             switch (state) {
                 case 0 : if (s1.indexOf(c) != -1) {
