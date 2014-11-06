@@ -3,7 +3,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.TreeMap;
 import java.util.NavigableMap;
@@ -32,7 +33,8 @@ public class Dictionary {
         String line = "";
         String[] fields;
         try {
-            BufferedReader file = new BufferedReader(new FileReader(filename)); 
+        	BufferedReader file = new BufferedReader(
+                    new InputStreamReader(new FileInputStream(filename), "utf-8")); 
         while ((line = readLine(file)) != null) {
             fields = line.split("\""); // TODO: This is buggy if text contains a quote. Should parse actual JSON.
             if ((fields.length) >= 3 && (fields[3].length() > 0)) {
