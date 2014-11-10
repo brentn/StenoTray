@@ -370,8 +370,10 @@ public class StenoTray extends JFrame {
     	GraphicsEnvironment g = GraphicsEnvironment.getLocalGraphicsEnvironment();
         String ploverConfig = mkPath(PLOVER_DIR, "plover.cfg");
         int fontSize = 12;
-        String fontName = "Sans"; // Default font
-        boolean useSegoe = false; // Use "Segoe UI Symbol" font if possible
+    	// Default font
+        String fontName = "Sans";
+        // Use "Segoe UI Symbol" font flag
+        boolean useSegoe = false;
         String line = "";
         String[] fields;
         if (new File(CONFIG_DIR).isFile()) {
@@ -398,17 +400,25 @@ public class StenoTray extends JFrame {
                 System.err.println("Error reading config file: "+CONFIG_DIR);
             }
         }
-        for (String ffname : g.getAvailableFontFamilyNames()) {
-            if (ffname.equals("Segoe UI Symbol")) {
-            	useSegoe = true;
-            	break;
+        try {
+        	for (String ffname : g.getAvailableFontFamilyNames()) {
+                if (ffname.equals("Segoe UI Symbol")) {
+                	useSegoe = true;
+                	break;
+                }
             }
+            if (useSegoe) {
+            	fontName = "Segoe UI Symbol";
+            }
+        } catch (Exception e) {
+        	// Do nothing if we have issues reading fonts
+        	if (DEBUG) {
+        		e.printStackTrace();
+        	}
         }
-        if (useSegoe) {
-        	fontName = "Segoe UI Symbol";
-        }
+        
         font = new Font(fontName, Font.BOLD, fontSize);
-        strokeFont = new Font("Sans", Font.BOLD, (fontSize));
+        strokeFont = new Font(fontName, Font.BOLD, (fontSize));
         if (new File(ploverConfig).isFile()) {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {
