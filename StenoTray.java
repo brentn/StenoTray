@@ -1,16 +1,19 @@
 import java.awt.Dimension; 
 import java.awt.Font;
+import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 import java.awt.Color;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.GridBagConstraints;
+
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.BoxLayout;
+
 import java.io.File;
 import java.io.Reader;
 import java.io.FileReader;
@@ -364,8 +367,13 @@ public class StenoTray extends JFrame {
     }
     
     private void readConfig() throws java.io.FileNotFoundException {
+    	GraphicsEnvironment g = GraphicsEnvironment.getLocalGraphicsEnvironment();
         String ploverConfig = mkPath(PLOVER_DIR, "plover.cfg");
         int fontSize = 12;
+    	// Default font
+        String fontName = "Sans";
+        // Use "Segoe UI Symbol" font flag
+        boolean useSegoe = false;
         String line = "";
         String[] fields;
         if (new File(CONFIG_DIR).isFile()) {
@@ -392,8 +400,25 @@ public class StenoTray extends JFrame {
                 System.err.println("Error reading config file: "+CONFIG_DIR);
             }
         }
-        font = new Font("Sans", Font.BOLD, fontSize);
-        strokeFont = new Font("Sans", Font.BOLD, (fontSize));
+        try {
+        	for (String ffname : g.getAvailableFontFamilyNames()) {
+                if (ffname.equals("Segoe UI Symbol")) {
+                	useSegoe = true;
+                	break;
+                }
+            }
+            if (useSegoe) {
+            	fontName = "Segoe UI Symbol";
+            }
+        } catch (Exception e) {
+        	// Do nothing if we have issues reading fonts
+        	if (DEBUG) {
+        		e.printStackTrace();
+        	}
+        }
+        
+        font = new Font(fontName, Font.BOLD, fontSize);
+        strokeFont = new Font(fontName, Font.BOLD, (fontSize));
         if (new File(ploverConfig).isFile()) {
             if (DEBUG) System.out.println("reading Plover config ("+ploverConfig+")...");
             try {
