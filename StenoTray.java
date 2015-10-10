@@ -1,29 +1,22 @@
-import java.awt.Dimension; 
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
-import java.awt.Color;
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import java.awt.GridBagConstraints;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JLabel;
-import javax.swing.JScrollPane;
-import javax.swing.BoxLayout;
-
-import java.io.File;
-import java.io.Reader;
-import java.io.FileReader;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
-import java.util.Vector;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.List;
+import java.io.Reader;
 import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.BoxLayout;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 public class StenoTray extends JFrame {
     static String mkPath(String path1, String... paths)
@@ -322,39 +315,34 @@ public class StenoTray extends JFrame {
             } else {
                 left = stroke;
             }
-            left = left.replace("STKPW","Z");
-            if (left.contains("S") && left.contains("K") && left.contains("W") && left.contains("R"))
-                left = left.replace("S","J").replace("K","").replace("W","").replace("R","");
-            left = left.replace("TKPW","G");
-            if (left.contains("T") && left.contains("P") && left.contains("H"))
-                left = left.replace("T","N").replace("P","").replace("H","");
-            if (left.contains("K") && left.contains("W") && left.contains("R"))
-                left = left.replace("K","Y").replace("W","").replace("R","");
-            left = left.replace("TK","D");
-            left = left.replace("PW","B");
-            left = left.replace("HR","L");
-            if (left.contains("T") && left.contains("P"))
-                left = left.replace("T","F").replace("P","");
-            if (left.contains("P") && left.contains("H"))
-                left = left.replace("P","M").replace("H","");
-            if (left.contains("K") && left.contains("W"))
-                left = left.replace("K","Q").replace("W","");
-            if (left.contains("K") && left.contains("P"))
-                left = left.replace("K","X").replace("P","");
-            if (left.contains("K") && left.contains("R"))
-                left = left.replace("K","C").replace("R","");
-            if (left.contains("S") && left.contains("R"))
-                left = left.replace("S","V").replace("R","");
-            vowels = vowels.replace("EU","I");
-            right = right.replace("PBLG","J");
-            if (right.contains("B") && right.contains("G") && right.contains("S"))
-                right = right.replace("B","X").replace("G","").replace("S","");
-            right = right.replace("PB","N");
-            if (right.contains("P") && right.contains("L"))
-                right = right.replace("P","M").replace("L","");
-            if (right.contains("B") && right.contains("G"))
-                right = right.replace("B","K").replace("G","");
-            result += left+vowels+right+"/";
+            // Grab the biggest clusters first, then in steno order
+            left = left
+                    .replace("STKPW","Z")
+                    .replace("SKWR",  "J")
+                    .replace("TKPW", "G")
+                    .replace("TPH", "N")
+                    .replace("KWR", "Y")
+                    .replace("SR", "V")
+                    .replace("TK","D")
+                    .replace("TP", "F")
+                    .replace("KP", "X")
+                    .replace("KW", "Q")
+                    .replace("KR", "C")
+                    .replace("PW","B")
+                    .replace("PH", "M")
+                    .replace("HR","L");
+
+            vowels = vowels
+                    .replace("EU","I");
+
+            right = right
+                    .replace("PBLG","J")
+                    .replace("BGS", "X")
+                    .replace("PB", "N")
+                    .replace("PL", "M")
+                    .replace("BG", "K");
+
+            result += left + vowels + right + "/";
         }
         return result.substring(0,result.length()-1);
     }
