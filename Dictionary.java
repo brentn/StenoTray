@@ -37,7 +37,7 @@ public class Dictionary {
                     new InputStreamReader(new FileInputStream(filename), "utf-8")); 
         while ((line = readLine(file)) != null) {
             fields = line.split("\""); // TODO: This is buggy if text contains a quote. Should parse actual JSON.
-            if ((fields.length) >= 3 && (fields[3].length() > 0)) {
+            if ((fields.length >= 4) && (fields[3].length() > 0)) {
                 stroke = fields[1];
                 translation = fields[3];
                 english.putSingle(translation, stroke);  // This is the MultiTreeMap, so any duplicate keys get added to the list. This is technically buggy if you use multiple dictionaries and some entries are overwritten. TODO
