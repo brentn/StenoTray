@@ -13,4 +13,4 @@ StenoTray.jar: *.class
 
 # No special options should be necessary.
 .java.class: $<
-	javac $<
+	javac -source 1.6 -target 1.6 $<
