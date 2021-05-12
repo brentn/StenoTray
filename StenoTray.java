@@ -17,6 +17,12 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.json.JsonArray;
+import javax.json.JsonReader;
+import javax.json.Json;
+import javax.json.JsonObject;
+import java.util.ListIterator;
+import java.io.StringReader;
 
 public class StenoTray extends JFrame {
     static String mkPath(String path1, String... paths)
@@ -414,8 +420,16 @@ public class StenoTray extends JFrame {
                 while (((line = pConfig.readLine()) != null)) {
                     fields = line.split("=");
                     if (fields.length >= 2) {
-                        if (fields[0].trim().length() > 15)
-                        if (fields[0].trim().substring(0,15).equals("dictionary_file"))
+                        if (fields[0].trim().equals("dictionaries")) {
+                            JsonReader reader = Json.createReader(new StringReader(fields[1].trim()));
+                            JsonArray list = reader.readArray();
+                            ListIterator l = list.listIterator();
+                            while ( l.hasNext() ) {
+                                JsonObject j = (JsonObject) l.next();
+                                dictionaryFiles.add(mkPath(PLOVER_DIR, j.getString("path")));
+                            }
+                        }
+                        if (fields[0].trim().equals("dictionary_file"))
                             dictionaryFiles.add(fields[1].trim());
                         if (fields[0].trim().equals("log_file"))
                             logFile = fields[1].trim();

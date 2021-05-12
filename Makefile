@@ -13,4 +13,7 @@ StenoTray.jar: *.class
 
 # No special options should be necessary.
 .java.class: $<
-	javac -source 1.6 -target 1.6 $<
+	javac -cp .:javax.json-1.0.jar $<
+
+clean:
+	rm *.jar *.class
